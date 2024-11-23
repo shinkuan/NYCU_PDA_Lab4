@@ -8,13 +8,16 @@ INCDIR = inc
 
 # Compiler and flags
 CXX = g++
-CXXFLAGS = -std=c++14 -fopenmp -I$(INCDIR) -Wall -Wextra -Wpedantic -Werror -g -Og
+CXXFLAGS = -std=c++14 -fopenmp -I$(INCDIR) -Wall -Wextra -Wpedantic -Werror
+RELEASE_FLAGS = -O3
+DEBUG_FLAGS = -g -Og -DDEBUG
 
 # Source and object files
 SOURCES := $(wildcard $(SRCDIR)/*.cpp) main.cpp
 OBJECTS := $(patsubst %.cpp,$(OBJDIR)/%.o,$(notdir $(SOURCES)))
 
-# Default target
+# Default target (release build)
+all: CXXFLAGS += $(RELEASE_FLAGS)
 all: $(TARGET)
 
 # Compile target
@@ -28,6 +31,10 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.cpp | $(OBJDIR)
 $(OBJDIR)/main.o: main.cpp | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+# Debug target
+debug: CXXFLAGS += $(DEBUG_FLAGS)
+debug: clean $(TARGET)
+
 # Create obj directory if it doesn't exist
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
@@ -40,4 +47,4 @@ clean:
 run: $(TARGET)
 	./$(TARGET)
 
-.PHONY: all clean run
+.PHONY: all clean run debug
