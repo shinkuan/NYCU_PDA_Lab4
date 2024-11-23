@@ -48,7 +48,8 @@ public:
     ~GCell();
 
     Point<int> lowerLeft;               // Real coordinate of lower left corner
-    unsigned int cost;                  // Cost of the cell
+    unsigned int costM1;                // Cost of the cell in metal 1
+    unsigned int costM2;                // Cost of the cell in metal 2
     unsigned int leftEdgeCapacity;      // Capacity of left edge
     unsigned int bottomEdgeCapacity;    // Capacity of bottom edge
     unsigned int leftEdgeCount   = 0;   // Count of left edge

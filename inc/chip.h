@@ -38,9 +38,14 @@
 
 #include <vector>
 #include "common.h"
+#include "gcell.h"
 
 
-using Bump = Point<int>;
+struct Bump {
+    int idx;                            // Index of bump
+    Point<int> position;                // Position of bump
+    GCell* gcell;                       // GCell of bump
+};
 
 class Chip {
 public:

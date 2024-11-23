@@ -57,8 +57,13 @@ private:
     Size<int>  gcellSize;                    // Size of gcell
     Chip chip1;                              // Chip 1
     Chip chip2;                              // Chip 2
-    std::vector<std::vector<GCell*>> gcells; // GCells in routing area
+    std::vector<std::vector<GCell*>> gcells; // GCells in routing area [y][x]
 
+    double alpha;                            // Alpha (WL cost)
+    double beta;                             // Beta (Overflow cost)
+    double gamma;                            // Gamma (Cell cost)
+    double delta;                            // Delta (Via cost)
+    double viaCost;                          // Via cost
 };
 
 
