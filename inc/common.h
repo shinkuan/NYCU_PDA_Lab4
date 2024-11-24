@@ -36,7 +36,7 @@
 #ifndef _COMMON_H_
 #define _COMMON_H_
 
-#define PROCESSOR_COUNT 8
+#define PROCESSOR_COUNT 4
 
 
 template <typename T>
