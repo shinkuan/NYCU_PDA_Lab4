@@ -49,8 +49,8 @@ struct Bump {
 
 class Chip {
 public:
-    Chip();
-    ~Chip();
+    Chip() {};
+    ~Chip() {};
 
     Point<int> lowerLeft;               // Real coordinate of lower left corner
     Size<int>  size;                    // Size of chip

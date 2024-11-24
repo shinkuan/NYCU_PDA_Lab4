@@ -40,12 +40,13 @@
 #include "common.h"
 
 
+class GCell;
 using Route = std::vector<GCell*>;
 
 class GCell {
 public:
-    GCell();
-    ~GCell();
+    GCell() {};
+    ~GCell() {};
 
     Point<int> lowerLeft;               // Real coordinate of lower left corner
     unsigned int costM1;                // Cost of the cell in metal 1
