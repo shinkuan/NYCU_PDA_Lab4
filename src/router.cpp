@@ -120,16 +120,16 @@ void Router::loadGridMap(const std::string& filename) {
     for (auto& row : gcells) {
         row.resize(routingAreaSize.x / gcellSize.x);
     }
-    for (int y = 0; y < gcells.size(); y++) {
-        for (int x = 0; x < gcells[y].size(); x++) {
+    for (size_t y = 0; y < gcells.size(); y++) {
+        for (size_t x = 0; x < gcells[y].size(); x++) {
             GCell* gcell = new GCell();
             gcell->parent.resize(PROCESSOR_COUNT, nullptr);
-            gcell->lowerLeft = {x * gcellSize.x + routingAreaLowerLeft.x, y * gcellSize.y + routingAreaLowerLeft.y};
+            gcell->lowerLeft = {static_cast<int>(x) * gcellSize.x + routingAreaLowerLeft.x, static_cast<int>(y) * gcellSize.y + routingAreaLowerLeft.y};
             gcells[y][x] = gcell;
         }
     }
-    for (int y = 0; y < gcells.size(); y++) {
-        for (int x = 0; x < gcells[y].size(); x++) {
+    for (size_t y = 0; y < gcells.size(); y++) {
+        for (size_t x = 0; x < gcells[y].size(); x++) {
             GCell* gcell = gcells[y][x];
             if (x > 0) {
                 gcell->left     = gcells[y][x - 1];
@@ -239,7 +239,7 @@ void Router::loadCost(const std::string& filename) {
         LoadingLayer
     };
 
-    int currentRow = 0;
+    size_t currentRow = 0;
     int currentLayer = 0;
     State state = State::LoadingCommand;
     std::string line;
@@ -282,7 +282,7 @@ void Router::loadCost(const std::string& filename) {
                 break;
             case State::LoadingLayer:
                 int cost;
-                for (int x = 0; x < gcells[currentRow].size(); x++) {
+                for (size_t x = 0; x < gcells[currentRow].size(); x++) {
                     iss >> cost;
                     if (currentLayer == 0) {
                         gcells[currentRow][x]->costM1 = cost;
