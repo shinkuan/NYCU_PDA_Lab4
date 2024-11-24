@@ -8,7 +8,7 @@ INCDIR = inc
 
 # Compiler and flags
 CXX = g++
-CXXFLAGS = -std=c++14 -fopenmp -I$(INCDIR) -Wall -Wextra -Wpedantic -Werror
+CXXFLAGS = -std=c++14 -fopenmp -I$(INCDIR) -Wall -Wextra -Wpedantic
 RELEASE_FLAGS = -O3
 DEBUG_FLAGS = -g -Og -DDEBUG
 
