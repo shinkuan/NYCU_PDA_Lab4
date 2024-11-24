@@ -36,6 +36,8 @@
 #ifndef _COMMON_H_
 #define _COMMON_H_
 
+#define PROCESSOR_COUNT 8
+
 
 template <typename T>
 struct Point {

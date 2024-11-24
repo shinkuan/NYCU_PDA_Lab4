@@ -116,31 +116,34 @@ void Router::loadGridMap(const std::string& filename) {
     }
     for (int y = 0; y < gcells.size(); y++) {
         for (int x = 0; x < gcells[y].size(); x++) {
-            gcells[y][x] = new GCell();
-            gcells[y][x]->lowerLeft = {x * gcellSize.x + routingAreaLowerLeft.x, y * gcellSize.y + routingAreaLowerLeft.y};
+            GCell* gcell = new GCell();
+            gcell->parent.resize(PROCESSOR_COUNT, nullptr);
+            gcell->lowerLeft = {x * gcellSize.x + routingAreaLowerLeft.x, y * gcellSize.y + routingAreaLowerLeft.y};
+            gcells[y][x] = gcell;
         }
     }
     for (int y = 0; y < gcells.size(); y++) {
         for (int x = 0; x < gcells[y].size(); x++) {
+            GCell* gcell = gcells[y][x];
             if (x > 0) {
-                gcells[y][x]->left = gcells[y][x - 1];
+                gcell->left     = gcells[y][x - 1];
             } else {
-                gcells[y][x]->left = nullptr;
+                gcell->left     = nullptr;
             }
             if (y > 0) {
-                gcells[y][x]->bottom = gcells[y - 1][x];
+                gcell->bottom   = gcells[y - 1][x];
             } else {
-                gcells[y][x]->bottom = nullptr;
+                gcell->bottom   = nullptr;
             }
             if (x < gcells[y].size() - 1) {
-                gcells[y][x]->right = gcells[y][x + 1];
+                gcell->right    = gcells[y][x + 1];
             } else {
-                gcells[y][x]->right = nullptr;
+                gcell->right    = nullptr;
             }
             if (y < gcells.size() - 1) {
-                gcells[y][x]->top = gcells[y + 1][x];
+                gcell->top      = gcells[y + 1][x];
             } else {
-                gcells[y][x]->top = nullptr;
+                gcell->top      = nullptr;
             }
         }
     }
@@ -156,11 +159,13 @@ void Router::loadGridMap(const std::string& filename) {
     for (auto& bump : chip1.bumps) {
         int x = (bump.position.x - routingAreaLowerLeft.x) / gcellSize.x;
         int y = (bump.position.y - routingAreaLowerLeft.y) / gcellSize.y;
+        LOG_TRACE("Chip 1 bump (" + std::to_string(bump.position.x) + ", " + std::to_string(bump.position.y) + ") -> GCell (" + std::to_string(x) + ", " + std::to_string(y) + ")");
         bump.gcell = gcells[y][x];
     }
     for (auto& bump : chip2.bumps) {
         int x = (bump.position.x - routingAreaLowerLeft.x) / gcellSize.x;
         int y = (bump.position.y - routingAreaLowerLeft.y) / gcellSize.y;
+        LOG_TRACE("Chip 2 bump (" + std::to_string(bump.position.x) + ", " + std::to_string(bump.position.y) + ") -> GCell (" + std::to_string(x) + ", " + std::to_string(y) + ")");
         bump.gcell = gcells[y][x];
     }
 }
