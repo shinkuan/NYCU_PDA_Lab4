@@ -50,6 +50,9 @@ public:
     void loadGridMap(const std::string& filename);
     void loadGCells(const std::string& filename);
     void loadCost(const std::string& filename);
+    Route* route(GCell* source, GCell* target, int processorId);
+
+    void run();
 
 private:
     Point<int> routingAreaLowerLeft;         // Real coordinate of lower left corner of routing area
@@ -64,6 +67,8 @@ private:
     double gamma;                            // Gamma (Cell cost)
     double delta;                            // Delta (Via cost)
     double viaCost;                          // Via cost
+
+    std::vector<Route*> routes;              // Routes
 };
 
 

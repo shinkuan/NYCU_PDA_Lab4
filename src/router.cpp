@@ -48,7 +48,7 @@ void Router::loadGridMap(const std::string& filename) {
         std::string command;
         iss >> command;
         switch (state) {
-            case State::LoadingCommand:
+            case State::LoadingCommand: {
                 if (command == ".ra") {
                     state = State::LoadingRoutingArea;
                 } else if (command == ".g") {
@@ -66,18 +66,21 @@ void Router::loadGridMap(const std::string& filename) {
                     LOG_ERROR("Unknown command " + command);
                 }
                 break;
-            case State::LoadingRoutingArea:
+            }
+            case State::LoadingRoutingArea: {
                 iss >> routingAreaLowerLeft.x >> routingAreaLowerLeft.y >> routingAreaSize.x >> routingAreaSize.y;
                 state = State::LoadingCommand;
                 LOG_TRACE("Routing area lower left: (" + std::to_string(routingAreaLowerLeft.x) + ", " + std::to_string(routingAreaLowerLeft.y) + ")");
                 LOG_TRACE("Routing area size: (" + std::to_string(routingAreaSize.x) + ", " + std::to_string(routingAreaSize.y) + ")");
                 break;
-            case State::LoadingGCellSize:
+            }
+            case State::LoadingGCellSize: {
                 iss >> gcellSize.x >> gcellSize.y;
                 state = State::LoadingCommand;
                 LOG_TRACE("GCell size: (" + std::to_string(gcellSize.x) + ", " + std::to_string(gcellSize.y) + ")");
                 break;
-            case State::LoadingChip1:
+            }
+            case State::LoadingChip1: {
                 int x, y;
                 iss >> x >> y >> chip1.size.x >> chip1.size.y;
                 chip1.lowerLeft = {x + routingAreaLowerLeft.x, y + routingAreaLowerLeft.y};
@@ -85,7 +88,8 @@ void Router::loadGridMap(const std::string& filename) {
                 LOG_TRACE("Chip 1 lower left: (" + std::to_string(chip1.lowerLeft.x) + ", " + std::to_string(chip1.lowerLeft.y) + ")");
                 LOG_TRACE("Chip 1 size: (" + std::to_string(chip1.size.x) + ", " + std::to_string(chip1.size.y) + ")");
                 break;
-            case State::LoadingBump:
+            }
+            case State::LoadingBump: {
                 int bidx, bx, by;
                 iss >> bidx >> bx >> by;
                 Bump bump = {bidx, {bx + routingAreaLowerLeft.x, by + routingAreaLowerLeft.y}, nullptr};
@@ -97,15 +101,17 @@ void Router::loadGridMap(const std::string& filename) {
                     LOG_TRACE("Chip 1 bump: (" + std::to_string(bx + routingAreaLowerLeft.x) + ", " + std::to_string(by + routingAreaLowerLeft.y) + ")");
                 }
                 break;
-            case State::LoadingChip2:
+            }
+            case State::LoadingChip2: {
+                int x, y;
                 iss >> x >> y >> chip2.size.x >> chip2.size.y;
                 chip2.lowerLeft = {x + routingAreaLowerLeft.x, y + routingAreaLowerLeft.y};
                 state = State::LoadingCommand;
                 LOG_TRACE("Chip 2 lower left: (" + std::to_string(chip2.lowerLeft.x) + ", " + std::to_string(chip2.lowerLeft.y) + ")");
                 LOG_TRACE("Chip 2 size: (" + std::to_string(chip2.size.x) + ", " + std::to_string(chip2.size.y) + ")");
                 break;
-            default:
-                break;
+            }
+            default: break;
         }
     }
     file.close();
@@ -194,14 +200,15 @@ void Router::loadGCells(const std::string& filename) {
         std::string command;
         iss >> command;
         switch (state) {
-            case State::LoadingCommand:
+            case State::LoadingCommand: {
                 if (command == ".ec") {
                     state = State::LoadingGCell;
                 } else {
                     LOG_ERROR("Unknown command " + command);
                 }
                 break;
-            case State::LoadingGCell:
+            }
+            case State::LoadingGCell: {
                 int leftEdgeCapacity, bottomEdgeCapacity;
                 iss >> leftEdgeCapacity >> bottomEdgeCapacity;
                 GCell* gcell = gcells[loadedGCellCount / gcells[0].size()][loadedGCellCount % gcells[0].size()];
@@ -210,8 +217,8 @@ void Router::loadGCells(const std::string& filename) {
                 loadedGCellCount++;
                 state = State::LoadingGCell;
                 break;
-            default:
-                break;
+            }
+            default: break;
         }
     }        
 }
@@ -297,4 +304,15 @@ void Router::loadCost(const std::string& filename) {
         }
     }
     file.close();
+}
+
+Route* Router::route(GCell* source, GCell* target, int processorId = 0) {
+    // Route
+    LOG_INFO("Routing from (" + std::to_string(source->lowerLeft.x) + ", " + std::to_string(source->lowerLeft.y) + ") to (" + std::to_string(target->lowerLeft.x) + ", " + std::to_string(target->lowerLeft.y) + ")");
+    return nullptr;
+}
+
+void Router::run() {
+    // Run
+    LOG_INFO("Running router");
 }
