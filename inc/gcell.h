@@ -60,8 +60,8 @@ public:
     GCell* right;                       // Pointer to right cell
     GCell* top;                         // Pointer to top cell
 
-    std::vector<Route> routesLeft;      // Routes passed left edge
-    std::vector<Route> routesBottom;    // Routes passed bottom edge
+    std::vector<Route*> routesLeft;     // Routes passed left edge
+    std::vector<Route*> routesBottom;   // Routes passed bottom edge
 
     std::vector<GCell*> parent;         // parent[process id] = parent cell
 
