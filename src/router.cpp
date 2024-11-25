@@ -336,6 +336,69 @@ void Router::loadCost(const std::string& filename) {
     medianCellCost = costs[medianIndex];
 }
 
+void Router::dumpRoutes(const std::string& filename) {
+    // Dump routes
+    LOG_INFO("Dumping routes to " + filename);
+
+    std::ofstream file(filename);
+    if (!file.is_open()) {
+        LOG_ERROR("Cannot open file " + filename);
+        return;
+    }
+
+    for (auto& route : routes) {
+        file << "n" << route->idx << std::endl;
+        Metal currentMetal = Metal::M1;
+        Point<int> fromPoint = route->route[0]->lowerLeft;
+        Point<int> lastPoint = route->route[0]->lowerLeft;
+        for (size_t i = 1; i < route->route.size(); i++) {
+            Point<int> currPoint = route->route[i]->lowerLeft;
+            Point<int> diff = {currPoint.x - lastPoint.x, currPoint.y - lastPoint.y};
+            if (diff.x != 0) {
+                if (diff.y != 0) {
+                    LOG_ERROR("Invalid route, cannot change both x and y");
+                    return;
+                }
+                if (currentMetal == Metal::M1) {
+                    // From Vertical to Horizontal
+                    file << "via" << std::endl; // Via
+                    file << "M2 " << fromPoint.x << " " << fromPoint.y << " " << lastPoint.x << " " << lastPoint.y << std::endl;
+                    currentMetal = Metal::M2;
+                    fromPoint = lastPoint;
+                } else {
+                    // From Horizontal to Horizontal
+                }
+            } else if (diff.y != 0) {
+                if (diff.x != 0) {
+                    LOG_ERROR("Invalid route, cannot change both x and y");
+                    return;
+                }
+                if (currentMetal == Metal::M1) {
+                    // From Vertical to Vertical
+                } else {
+                    // From Horizontal to Vertical
+                    file << "via" << std::endl; // Via
+                    file << "M1 " << fromPoint.x << " " << fromPoint.y << " " << lastPoint.x << " " << lastPoint.y << std::endl;
+                    currentMetal = Metal::M1;
+                    fromPoint = lastPoint;
+                }
+            } else {
+                LOG_ERROR("Invalid route, no change in x and y");
+                return;
+            }
+            lastPoint = currPoint;
+        }
+        if (currentMetal == Metal::M1) {
+            file << "M1 " << fromPoint.x << " " << fromPoint.y << " " << lastPoint.x << " " << lastPoint.y << std::endl;
+        } else {
+            file << "M2 " << fromPoint.x << " " << fromPoint.y << " " << lastPoint.x << " " << lastPoint.y << std::endl;
+            file << "via" << std::endl;
+        }
+        file << ".end" << std::endl;
+    }
+    file.close();
+}
+
 double Router::heuristicManhattan(GCell* a, GCell* b) {
     // Manhattan distance
     return (std::abs(a->lowerLeft.x - b->lowerLeft.x) + std::abs(a->lowerLeft.y - b->lowerLeft.y))*alpha*medianCellCost;

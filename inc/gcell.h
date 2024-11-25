@@ -40,6 +40,11 @@
 #include "common.h"
 
 
+enum class Metal {
+    M1,
+    M2
+};
+
 class GCell;
 struct Route {
     std::vector<GCell*> route;
