@@ -1,9 +1,11 @@
+#include <cfloat>
+#include <fstream>
+#include <sstream>
+#include <iostream>
+#include <algorithm>
+#include <unordered_set>
 #include "router.h"
 #include "logger.h"
-#include <fstream>
-#include <iostream>
-#include <sstream>
-#include <algorithm>
 
 Router::Router() {
 }
@@ -124,6 +126,9 @@ void Router::loadGridMap(const std::string& filename) {
         for (size_t x = 0; x < gcells[y].size(); x++) {
             GCell* gcell = new GCell();
             gcell->parent.resize(PROCESSOR_COUNT, nullptr);
+            gcell->fScore.resize(PROCESSOR_COUNT, DBL_MAX);
+            gcell->gScore.resize(PROCESSOR_COUNT, DBL_MAX);
+            gcell->hScore.resize(PROCESSOR_COUNT, DBL_MAX);
             gcell->lowerLeft = {static_cast<int>(x) * gcellSize.x + routingAreaLowerLeft.x, static_cast<int>(y) * gcellSize.y + routingAreaLowerLeft.y};
             gcells[y][x] = gcell;
         }

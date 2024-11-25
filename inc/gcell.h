@@ -65,6 +65,9 @@ public:
     std::vector<Route*> routesBottom;   // Routes passed bottom edge
 
     std::vector<GCell*> parent;         // parent[process id] = parent cell
+    std::vector<double> fScore;         // fScore[process id] = gScore[process id] + hScore[process id]
+    std::vector<double> gScore;         // gScore[process id] = cost of the cheapest path from start to current cell
+    std::vector<double> hScore;         // hScore[process id] = estimated cost from current cell to target
 
 };
 
