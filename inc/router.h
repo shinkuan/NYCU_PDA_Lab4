@@ -70,6 +70,9 @@ private:
     double delta;                            // Delta (Via cost)
     double viaCost;                          // Via cost
 
+    double maxCellCost;                      // Maximum cell cost
+    double medianCellCost;                   // Median cell cost
+
     std::vector<Route*> routes;              // Routes
 };
 

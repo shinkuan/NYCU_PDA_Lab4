@@ -252,6 +252,8 @@ void Router::loadCost(const std::string& filename) {
         LoadingLayer
     };
 
+    std::vector<double> costs(gcells.size() * gcells[0].size() * 2);
+    maxCellCost = DBL_MIN;
     size_t currentRow = 0;
     int currentLayer = 0;
     State state = State::LoadingCommand;
@@ -297,6 +299,10 @@ void Router::loadCost(const std::string& filename) {
             }
             case State::LoadingLayer: {
                 double cost;
+                costs.push_back(cost);
+                if (cost > maxCellCost) {
+                    maxCellCost = cost;
+                }
                 for (size_t x = 0; x < gcells[currentRow].size(); x++) {
                     iss >> cost;
                     if (currentLayer == 0) {
@@ -319,6 +325,11 @@ void Router::loadCost(const std::string& filename) {
         }
     }
     file.close();
+
+    // use nth_element to find median
+    size_t medianIndex = costs.size() / 2;
+    std::nth_element(costs.begin(), costs.begin() + medianIndex, costs.end());
+    medianCellCost = costs[medianIndex];
 }
 
 Route* Router::route(GCell* source, GCell* target, int processorId = 0) {
