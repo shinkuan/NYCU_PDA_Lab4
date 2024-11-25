@@ -41,11 +41,16 @@ void Router::loadGridMap(const std::string& filename) {
         LoadingChip2
     };
 
-    bool chip1Loaded = false;
+    bool loadingChip1 = false;
     State state = State::LoadingCommand;
     std::string line;
     while (std::getline(file, line)) {
-        if (is_blank(line)) continue;
+        if (is_blank(line)) {
+            if (state == State::LoadingBump) {
+                state = State::LoadingCommand;
+            }
+            continue;
+        }
         std::istringstream iss(line);
         switch (state) {
             case State::LoadingCommand: {
@@ -56,11 +61,12 @@ void Router::loadGridMap(const std::string& filename) {
                 } else if (command == ".g") {
                     state = State::LoadingGCellSize;
                 } else if (command == ".c") {
-                    if (chip1Loaded) {
+                    if (loadingChip1) {
                         state = State::LoadingChip2;
+                        loadingChip1 = false;
                     } else {
                         state = State::LoadingChip1;
-                        chip1Loaded = true;
+                        loadingChip1 = true;
                     }
                 } else if (command == ".b") {
                     state = State::LoadingBump;
@@ -94,13 +100,14 @@ void Router::loadGridMap(const std::string& filename) {
             case State::LoadingBump: {
                 int bidx, bx, by;
                 iss >> bidx >> bx >> by;
-                Bump bump = {bidx, {bx + routingAreaLowerLeft.x, by + routingAreaLowerLeft.y}, nullptr};
-                if (chip1Loaded) {
-                    chip2.bumps.push_back(bump);
-                    LOG_TRACE("Chip 2 bump: (" + std::to_string(bx + routingAreaLowerLeft.x) + ", " + std::to_string(by + routingAreaLowerLeft.y) + ")");
-                } else {
+                if (loadingChip1) {
+                    Bump bump = {bidx, {bx + chip1.lowerLeft.x, by + chip1.lowerLeft.y}, nullptr};
                     chip1.bumps.push_back(bump);
-                    LOG_TRACE("Chip 1 bump: (" + std::to_string(bx + routingAreaLowerLeft.x) + ", " + std::to_string(by + routingAreaLowerLeft.y) + ")");
+                    LOG_TRACE("Chip 1 bump (" + std::to_string(bump.position.x) + ", " + std::to_string(bump.position.y) + ")");
+                } else {
+                    Bump bump = {bidx, {bx + chip2.lowerLeft.x, by + chip2.lowerLeft.y}, nullptr};
+                    chip2.bumps.push_back(bump);
+                    LOG_TRACE("Chip 2 bump (" + std::to_string(bump.position.x) + ", " + std::to_string(bump.position.y) + ")");
                 }
                 break;
             }
@@ -316,6 +323,10 @@ void Router::loadCost(const std::string& filename) {
 Route* Router::route(GCell* source, GCell* target, int processorId = 0) {
     // Route
     LOG_INFO("[Processor " + std::to_string(processorId) + "] Routing from (" + std::to_string(source->lowerLeft.x) + ", " + std::to_string(source->lowerLeft.y) + ") to (" + std::to_string(target->lowerLeft.x) + ", " + std::to_string(target->lowerLeft.y) + ")");
+    
+    std::unordered_set<GCell*> closedSet;
+    std::vector<GCell*> openSet;
+    
     return nullptr;
 }
 
