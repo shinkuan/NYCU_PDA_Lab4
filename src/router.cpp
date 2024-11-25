@@ -288,7 +288,7 @@ void Router::loadCost(const std::string& filename) {
                 break;
             }
             case State::LoadingLayer: {
-                int cost;
+                double cost;
                 for (size_t x = 0; x < gcells[currentRow].size(); x++) {
                     iss >> cost;
                     if (currentLayer == 0) {
