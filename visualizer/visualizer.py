@@ -252,11 +252,11 @@ class Visualizer(object):
         
         for bump in self.chip1_bumps:
             plt.plot(bump.lower_left.x, bump.lower_left.y, 
-                     marker='o', markersize=10, color='blue')
+                     marker='o', markersize=3, color='blue')
         
         for bump in self.chip2_bumps:
             plt.plot(bump.lower_left.x, bump.lower_left.y, 
-                     marker='o', markersize=10, color='green')
+                     marker='o', markersize=3, color='green')
         
         color_cycle = ['purple', 'orange', 'brown', 'pink', 'gray', 'cyan']
         for i, route in enumerate(self.routes.values()):
