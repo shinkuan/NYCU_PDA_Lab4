@@ -41,7 +41,10 @@
 
 
 class GCell;
-using Route = std::vector<GCell*>;
+struct Route {
+    std::vector<GCell*> route;
+    int idx;
+};
 
 class GCell {
 public:
@@ -79,7 +82,6 @@ public:
     std::vector<FromDirection> fromDirection; // fromDirection[process id] = from direction of parent cell
 
 };
-
 
 
 #endif // _GCELL_H_

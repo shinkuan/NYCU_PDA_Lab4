@@ -370,14 +370,14 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
             LOG_TRACE("[Processor " + std::to_string(processorId) + "] Found target");
             Route* route = new Route();
             while (current != nullptr) {
-                route->push_back(current);
+                route->route.push_back(current);
                 current = current->parent[processorId];
                 if (current == source) {
-                    route->push_back(current);
+                    route->route.push_back(current);
                     break;
                 }
             }
-            std::reverse(route->begin(), route->end());
+            std::reverse(route->route.begin(), route->route.end());
             return route;
         }
 
@@ -598,6 +598,7 @@ void Router::solve() {
         Bump& bump1 = chip1.bumps[bump_idx];
         Bump& bump2 = chip2.bumps[bump_idx];
         Route* route = router(bump1.gcell, bump2.gcell);
+        route->idx = bump_idx;
         if (route == nullptr) {
             LOG_ERROR("Cannot find route from (" + std::to_string(bump1.gcell->lowerLeft.x) + ", " + std::to_string(bump1.gcell->lowerLeft.y) + ") to (" + std::to_string(bump2.gcell->lowerLeft.x) + ", " + std::to_string(bump2.gcell->lowerLeft.y) + ")");
         } else {
@@ -605,4 +606,9 @@ void Router::solve() {
             routes.push_back(route);
         }
     }
+    LOG_INFO("Router finished");
+
+    std::sort(routes.begin(), routes.end(), [](const Route* a, const Route* b) {
+        return a->idx < b->idx;
+    });
 }
