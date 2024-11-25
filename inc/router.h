@@ -38,6 +38,8 @@
 
 #include <vector>
 #include <string>
+#include <set>
+#include <unordered_set>
 #include "common.h"
 #include "gcell.h"
 #include "chip.h"
@@ -70,6 +72,13 @@ private:
 
     std::vector<Route*> routes;              // Routes
 };
+
+
+auto cmp = [](GCell* a, GCell* b) {
+    return a->fScore < b->fScore;
+};
+using OpenSet = std::set<GCell*, decltype(cmp)>;
+using ClosedSet = std::unordered_set<GCell*>;
 
 
 #endif // _ROUTER_H_

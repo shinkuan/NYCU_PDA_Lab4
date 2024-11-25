@@ -3,6 +3,7 @@
 #include <sstream>
 #include <iostream>
 #include <algorithm>
+#include <set>
 #include <unordered_set>
 #include "router.h"
 #include "logger.h"
@@ -324,10 +325,9 @@ Route* Router::route(GCell* source, GCell* target, int processorId = 0) {
     // Route
     LOG_INFO("[Processor " + std::to_string(processorId) + "] Routing from (" + std::to_string(source->lowerLeft.x) + ", " + std::to_string(source->lowerLeft.y) + ") to (" + std::to_string(target->lowerLeft.x) + ", " + std::to_string(target->lowerLeft.y) + ")");
     
-    std::unordered_set<GCell*> closedSet;
-    std::vector<GCell*> openSet;
-    
-    return nullptr;
+    ClosedSet closedSet;
+    OpenSet openSet;
+
 }
 
 void Router::run() {
