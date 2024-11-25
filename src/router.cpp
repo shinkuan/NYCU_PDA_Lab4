@@ -343,7 +343,7 @@ double Router::heuristicCustom(GCell* a, GCell* b) {
 }
 
 // https://zh.wikipedia.org/zh-tw/A*搜尋演算法
-Route* Router::route(GCell* source, GCell* target, int processorId = 0) {
+Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
     // Route
     LOG_INFO("[Processor " + std::to_string(processorId) + "] Routing from (" + std::to_string(source->lowerLeft.x) + ", " + std::to_string(source->lowerLeft.y) + ") to (" + std::to_string(target->lowerLeft.x) + ", " + std::to_string(target->lowerLeft.y) + ")");
     

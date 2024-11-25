@@ -53,7 +53,7 @@ public:
     void loadGridMap(const std::string& filename);
     void loadGCells(const std::string& filename);
     void loadCost(const std::string& filename);
-    Route* route(GCell* source, GCell* target, int processorId);
+    Route* router(GCell* source, GCell* target, int processorId);
 
     void run();
 
