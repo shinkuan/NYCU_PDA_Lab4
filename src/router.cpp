@@ -17,6 +17,9 @@ Router::~Router() {
             delete gcell;
         }
     }
+    for (auto& route : routes) {
+        delete route;
+    }
 }
 
 bool is_blank( const std::string & s ) {
@@ -137,6 +140,7 @@ void Router::loadGridMap(const std::string& filename) {
             gcell->fScore.resize(PROCESSOR_COUNT, DBL_MAX);
             gcell->gScore.resize(PROCESSOR_COUNT, DBL_MAX);
             gcell->hScore.resize(PROCESSOR_COUNT, DBL_MAX);
+            gcell->fromDirection.resize(PROCESSOR_COUNT, GCell::FromDirection::ORIGIN);
             gcell->lowerLeft = {static_cast<int>(x) * gcellSize.x + routingAreaLowerLeft.x, static_cast<int>(y) * gcellSize.y + routingAreaLowerLeft.y};
             gcells[y][x] = gcell;
         }
@@ -299,7 +303,7 @@ void Router::loadCost(const std::string& filename) {
             }
             case State::LoadingLayer: {
                 double cost;
-                costs.push_back(cost);
+                if (cost != 0) costs.push_back(cost);
                 if (cost > maxCellCost) {
                     maxCellCost = cost;
                 }
@@ -362,6 +366,7 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
     while (!openSet.empty()) {
         GCell* current = *openSet.begin();
         if (current == target) {
+            LOG_TRACE("[Processor " + std::to_string(processorId) + "] Found target");
             Route* route = new Route();
             while (current != nullptr) {
                 route->push_back(current);
@@ -378,6 +383,7 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
         openSet.erase(current);
         closedSet.insert(current);
 
+        LOG_TRACE("[Processor " + std::to_string(processorId) + "] Current cell: (" + std::to_string(current->lowerLeft.x) + ", " + std::to_string(current->lowerLeft.y) + ")");
         if (
             current->left != nullptr && closedSet.find(current->left) == closedSet.end() &&
             current->fromDirection[processorId] != GCell::FromDirection::LEFT
@@ -405,7 +411,10 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
                                     + gamma*neighbor->costM2;
                     break;
                 }
-                default: break;
+                default: {
+                    LOG_ERROR("Unknown from direction");
+                    return nullptr;
+                }
             }
 
             bool tentativeIsBetter = false;
@@ -452,7 +461,10 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
                                     + delta*viaCost;
                     break;
                 }
-                default: break;
+                default: {
+                    LOG_ERROR("Unknown from direction");
+                    return nullptr;
+                }
             }
 
             bool tentativeIsBetter = false;
@@ -499,7 +511,10 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
                                     + gamma*neighbor->costM2;
                     break;
                 }
-                default: break;
+                default: {
+                    LOG_ERROR("Unknown from direction");
+                    return nullptr;
+                }
             }
 
             bool tentativeIsBetter = false;
@@ -546,7 +561,10 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
                                     + delta*viaCost;
                     break;
                 }
-                default: break;
+                default: {
+                    LOG_ERROR("Unknown from direction");
+                    return nullptr;
+                }
             }
 
             bool tentativeIsBetter = false;
@@ -573,4 +591,17 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
 void Router::run() {
     // Run
     LOG_INFO("Running router");
+
+    for (size_t bump_idx = 0; bump_idx < chip1.bumps.size(); bump_idx++) {
+        LOG_INFO("Routing bump " + std::to_string(bump_idx));
+        Bump& bump1 = chip1.bumps[bump_idx];
+        Bump& bump2 = chip2.bumps[bump_idx];
+        Route* route = router(bump1.gcell, bump2.gcell);
+        if (route == nullptr) {
+            LOG_ERROR("Cannot find route from (" + std::to_string(bump1.gcell->lowerLeft.x) + ", " + std::to_string(bump1.gcell->lowerLeft.y) + ") to (" + std::to_string(bump2.gcell->lowerLeft.x) + ", " + std::to_string(bump2.gcell->lowerLeft.y) + ")");
+        } else {
+            LOG_INFO("Success");
+            routes.push_back(route);
+        }
+    }
 }
