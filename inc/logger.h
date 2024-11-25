@@ -3,6 +3,8 @@
 #include <sstream>
 #include <iomanip>
 #include <mutex>
+#include <chrono>
+#include <ctime>
 
 class Logger {
 public:
@@ -26,7 +28,9 @@ public:
             std::cout << getLogLevelColor(level)
                       << "[" << std::setw(levelWidth) << std::left << logLevelToString(level) << "]"
                       << resetColor()
-                      << " " << message << std::endl;
+                      << "[" << getCurrentTimestamp() << "]"
+                      << "[+" << getRuntime() << "] "
+                      << message << std::endl;
         }
 #endif
     }
@@ -58,7 +62,48 @@ public:
     }
 
 private:
-    Logger() : currentLogLevel(LogLevel::TRACE) {}
+    Logger() : currentLogLevel(LogLevel::TRACE), startTime(std::chrono::steady_clock::now()) {}
+
+    std::string getCurrentTimestamp() const {
+        auto now = std::chrono::system_clock::now();
+        auto now_time_t = std::chrono::system_clock::to_time_t(now);
+        auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            now.time_since_epoch()) % 1000;
+        
+        std::stringstream ss;
+        ss << std::put_time(std::localtime(&now_time_t), "%Y-%m-%d %H:%M:%S");
+        ss << '.' << std::setfill('0') << std::setw(3) << now_ms.count();
+        return ss.str();
+    }
+
+    std::string getRuntime() const {
+        auto now = std::chrono::steady_clock::now();
+        auto duration = now - startTime;
+        
+        auto hours = std::chrono::duration_cast<std::chrono::hours>(duration);
+        duration -= hours;
+        auto minutes = std::chrono::duration_cast<std::chrono::minutes>(duration);
+        duration -= minutes;
+        auto seconds = std::chrono::duration_cast<std::chrono::seconds>(duration);
+        duration -= seconds;
+        auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+
+        std::stringstream ss;
+        ss << std::setfill('0');
+        
+        if (hours.count() > 0) {
+            ss << hours.count() << ":" 
+               << std::setw(2) << minutes.count() << ":"
+               << std::setw(2) << seconds.count();
+        } else if (minutes.count() > 0) {
+            ss << minutes.count() << ":"
+               << std::setw(2) << seconds.count();
+        } else {
+            ss << seconds.count();
+        }
+        ss << "." << std::setw(3) << milliseconds.count();
+        return ss.str();
+    }
 
     std::string logLevelToString(LogLevel level) const {
         switch (level) {
@@ -89,6 +134,7 @@ private:
     LogLevel currentLogLevel;
     std::mutex logMutex;
     static constexpr int levelWidth = 9;
+    const std::chrono::steady_clock::time_point startTime; // 程式啟動時間
 };
 
 #define LOG_TRACE(message) Logger::getInstance().trace(message)
