@@ -45,10 +45,10 @@ void Router::loadGridMap(const std::string& filename) {
     while (std::getline(file, line)) {
         if (is_blank(line)) continue;
         std::istringstream iss(line);
-        std::string command;
-        iss >> command;
         switch (state) {
             case State::LoadingCommand: {
+                std::string command;
+                iss >> command;
                 if (command == ".ra") {
                     state = State::LoadingRoutingArea;
                 } else if (command == ".g") {
@@ -197,10 +197,10 @@ void Router::loadGCells(const std::string& filename) {
     while (std::getline(file, line)) {
         if (is_blank(line)) continue;
         std::istringstream iss(line);
-        std::string command;
-        iss >> command;
         switch (state) {
             case State::LoadingCommand: {
+                std::string command;
+                iss >> command;
                 if (command == ".ec") {
                     state = State::LoadingGCell;
                 } else {
@@ -246,10 +246,10 @@ void Router::loadCost(const std::string& filename) {
     while (std::getline(file, line)) {
         if (is_blank(line)) continue;
         std::istringstream iss(line);
-        std::string command;
-        iss >> command;
         switch (state) {
-            case State::LoadingCommand:
+            case State::LoadingCommand: {
+                std::string command;
+                iss >> command;
                 if (command == ".l") {
                     state = State::LoadingLayer;
                 } else if (command == ".v") {
@@ -275,12 +275,14 @@ void Router::loadCost(const std::string& filename) {
                     LOG_ERROR("Unknown command " + command);
                 }
                 break;
-            case State::LoadingViaCost:
+            }
+            case State::LoadingViaCost: {
                 iss >> viaCost;
                 state = State::LoadingCommand;
                 LOG_TRACE("Via cost: " + std::to_string(viaCost));
                 break;
-            case State::LoadingLayer:
+            }
+            case State::LoadingLayer: {
                 int cost;
                 for (size_t x = 0; x < gcells[currentRow].size(); x++) {
                     iss >> cost;
@@ -299,8 +301,8 @@ void Router::loadCost(const std::string& filename) {
                     state = State::LoadingLayer;
                 }
                 break;
-            default:
-                break;
+            }
+            default: break;
         }
     }
     file.close();
@@ -308,7 +310,7 @@ void Router::loadCost(const std::string& filename) {
 
 Route* Router::route(GCell* source, GCell* target, int processorId = 0) {
     // Route
-    LOG_INFO("Routing from (" + std::to_string(source->lowerLeft.x) + ", " + std::to_string(source->lowerLeft.y) + ") to (" + std::to_string(target->lowerLeft.x) + ", " + std::to_string(target->lowerLeft.y) + ")");
+    LOG_INFO("[Processor " + std::to_string(processorId) + "] Routing from (" + std::to_string(source->lowerLeft.x) + ", " + std::to_string(source->lowerLeft.y) + ") to (" + std::to_string(target->lowerLeft.x) + ", " + std::to_string(target->lowerLeft.y) + ")");
     return nullptr;
 }
 
