@@ -18,6 +18,7 @@ int main(int argc, char* argv[]) {
     router.loadGCells(argv[2]);
     router.loadCost(argv[3]);
     router.solve();
+    router.dumpRoutes(argv[4]);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
