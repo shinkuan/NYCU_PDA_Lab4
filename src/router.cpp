@@ -336,8 +336,14 @@ Route* Router::route(GCell* source, GCell* target, int processorId = 0) {
     // Route
     LOG_INFO("[Processor " + std::to_string(processorId) + "] Routing from (" + std::to_string(source->lowerLeft.x) + ", " + std::to_string(source->lowerLeft.y) + ") to (" + std::to_string(target->lowerLeft.x) + ", " + std::to_string(target->lowerLeft.y) + ")");
     
-    ClosedSet closedSet;
-    OpenSet openSet;
+    const auto cmp = [processorId](GCell* a, GCell* b) {
+        return a->fScore[processorId] < b->fScore[processorId];
+    };
+    std::unordered_set<GCell*> closedSet;
+    std::set<GCell*, decltype(cmp)> openSet(cmp);
+
+    source->gScore[processorId] = 0;
+
 
 }
 
