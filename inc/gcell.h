@@ -49,8 +49,8 @@ public:
     ~GCell() {};
 
     Point<int> lowerLeft;               // Real coordinate of lower left corner
-    double costM1;                // Cost of the cell in metal 1
-    double costM2;                // Cost of the cell in metal 2
+    double costM1;                      // Cost of the cell in metal 1
+    double costM2;                      // Cost of the cell in metal 2
     unsigned int leftEdgeCapacity;      // Capacity of left edge
     unsigned int bottomEdgeCapacity;    // Capacity of bottom edge
     unsigned int leftEdgeCount   = 0;   // Count of left edge
@@ -68,6 +68,15 @@ public:
     std::vector<double> fScore;         // fScore[process id] = gScore[process id] + hScore[process id]
     std::vector<double> gScore;         // gScore[process id] = cost of the cheapest path from start to current cell
     std::vector<double> hScore;         // hScore[process id] = estimated cost from current cell to target
+
+    enum class FromDirection {
+        ORIGIN,
+        LEFT,
+        BOTTOM,
+        RIGHT,
+        TOP
+    };
+    std::vector<FromDirection> fromDirection; // fromDirection[process id] = from direction of parent cell
 
 };
 
