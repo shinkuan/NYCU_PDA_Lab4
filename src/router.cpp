@@ -364,7 +364,8 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
     openSet.insert(source);
 
     while (!openSet.empty()) {
-        GCell* current = *openSet.begin();
+        auto it = openSet.begin();
+        GCell* current = *it;
         if (current == target) {
             LOG_TRACE("[Processor " + std::to_string(processorId) + "] Found target");
             Route* route = new Route();
@@ -380,7 +381,7 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
             return route;
         }
 
-        openSet.erase(current);
+        openSet.erase(it);
         closedSet.insert(current);
 
         LOG_TRACE("[Processor " + std::to_string(processorId) + "] Current cell: (" + std::to_string(current->lowerLeft.x) + ", " + std::to_string(current->lowerLeft.y) + ")");
