@@ -23,7 +23,7 @@ TESTCASES = testcase0 testcase1 testcase2
 CXX = g++
 CXXFLAGS = -std=c++14 -fopenmp -I$(INCDIR) -Wall -Wextra -Wpedantic
 RELEASE_FLAGS = -O3
-DEBUG_FLAGS = -g -Og -DDEBUG
+DEBUG_FLAGS = -g -DDEBUG
 
 # Source and object files
 SOURCES := $(wildcard $(SRCDIR)/*.cpp) main.cpp
