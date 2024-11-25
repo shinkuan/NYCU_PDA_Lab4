@@ -529,7 +529,7 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
             switch (current->fromDirection[processorId]) {
                 // M1 -> M1
                 case GCell::FromDirection::ORIGIN:
-                case GCell::FromDirection::TOP: {
+                case GCell::FromDirection::BOTTOM: {
                     tentativeGScore = current->gScore[processorId]
                                     + alpha*gcellSize.y
                                     // beta
