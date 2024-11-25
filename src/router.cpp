@@ -361,8 +361,9 @@ void Router::dumpRoutes(const std::string& filename) {
                 }
                 if (currentMetal == Metal::M1) {
                     // From Vertical to Horizontal
+                    if (fromPoint.y != lastPoint.y) // Start Point correction
+                        file << "M1 " << fromPoint.x << " " << fromPoint.y << " " << lastPoint.x << " " << lastPoint.y << std::endl;
                     file << "via" << std::endl; // Via
-                    file << "M2 " << fromPoint.x << " " << fromPoint.y << " " << lastPoint.x << " " << lastPoint.y << std::endl;
                     currentMetal = Metal::M2;
                     fromPoint = lastPoint;
                 } else {
@@ -377,8 +378,8 @@ void Router::dumpRoutes(const std::string& filename) {
                     // From Vertical to Vertical
                 } else {
                     // From Horizontal to Vertical
+                    file << "M2 " << fromPoint.x << " " << fromPoint.y << " " << lastPoint.x << " " << lastPoint.y << std::endl;
                     file << "via" << std::endl; // Via
-                    file << "M1 " << fromPoint.x << " " << fromPoint.y << " " << lastPoint.x << " " << lastPoint.y << std::endl;
                     currentMetal = Metal::M1;
                     fromPoint = lastPoint;
                 }
