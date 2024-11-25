@@ -1,5 +1,15 @@
 # Target name
 TARGET = D2DGRter
+ifeq ($(OS),Windows_NT)
+    TARGET := $(TARGET).exe
+    RM = del /Q /F
+    MKDIR = if not exist "$(OBJDIR)" mkdir
+    PATH_SEP = \\
+else
+    RM = rm -rf
+    MKDIR = mkdir -p
+    PATH_SEP = /
+endif
 
 # Folder paths
 SRCDIR = src
@@ -37,14 +47,23 @@ debug: clean $(TARGET)
 
 # Create obj directory if it doesn't exist
 $(OBJDIR):
-	mkdir -p $(OBJDIR)
+	$(MKDIR) $(OBJDIR)
 
 # Clean up object files and executable
 clean:
-	rm -rf $(OBJDIR)/*.o $(TARGET)
+ifeq ($(OS),Windows_NT)
+	@if exist "$(OBJDIR)\*.o" $(RM) "$(OBJDIR)\*.o"
+	@if exist "$(TARGET)" $(RM) "$(TARGET)"
+else
+	$(RM) $(OBJDIR)/*.o $(TARGET)
+endif
 
 # Run the compiled executable
 run: $(TARGET)
+ifeq ($(OS),Windows_NT)
+	.\$(TARGET)
+else
 	./$(TARGET)
+endif
 
 .PHONY: all clean run debug
