@@ -5,6 +5,7 @@
 #include <mutex>
 #include <chrono>
 #include <ctime>
+#include <cstdlib>
 
 class Logger {
 public:
@@ -23,12 +24,11 @@ public:
 
     void log(LogLevel level, const std::string& message) {
 #ifdef DEBUG
-        std::lock_guard<std::mutex> lock(logMutex); // 確保多執行緒安全
+        std::lock_guard<std::mutex> lock(logMutex);
         if (level >= currentLogLevel) {
             std::cout << getLogLevelColor(level)
                       << "[" << std::setw(levelWidth) << std::left << logLevelToString(level) << "]"
                       << resetColor()
-                      << "[" << getCurrentTimestamp() << "]"
                       << "[+" << getRuntime() << "] "
                       << message << std::endl;
         }
@@ -62,7 +62,29 @@ public:
     }
 
 private:
-    Logger() : currentLogLevel(LogLevel::TRACE), startTime(std::chrono::steady_clock::now()) {}
+    Logger() : startTime(std::chrono::steady_clock::now()) {
+        currentLogLevel = getLogLevelFromEnv();
+    }
+
+    LogLevel getLogLevelFromEnv() const {
+        const char* logLevelStr = std::getenv("LOG_LEVEL");
+        if (logLevelStr == nullptr) {
+            return LogLevel::INFO;
+        }
+
+        std::string level(logLevelStr);
+        for (char& c : level) {
+            c = std::toupper(c);
+        }
+
+        if (level == "TRACE") return LogLevel::TRACE;
+        if (level == "INFO") return LogLevel::INFO;
+        if (level == "WARNING") return LogLevel::WARNING;
+        if (level == "ERROR") return LogLevel::ERROR;
+        if (level == "CRITICAL") return LogLevel::CRITICAL;
+
+        return LogLevel::INFO;
+    }
 
     std::string getCurrentTimestamp() const {
         auto now = std::chrono::system_clock::now();
@@ -134,7 +156,7 @@ private:
     LogLevel currentLogLevel;
     std::mutex logMutex;
     static constexpr int levelWidth = 9;
-    const std::chrono::steady_clock::time_point startTime; // 程式啟動時間
+    const std::chrono::steady_clock::time_point startTime;
 };
 
 #define LOG_TRACE(message) Logger::getInstance().trace(message)
