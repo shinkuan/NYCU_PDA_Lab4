@@ -661,8 +661,11 @@ void Router::solve() {
         LOG_INFO("Routing bump " + std::to_string(bump_idx));
         Bump& bump1 = chip1.bumps[bump_idx];
         Bump& bump2 = chip2.bumps[bump_idx];
+        if (bump1.idx != bump2.idx) {
+            LOG_ERROR("Bump index mismatch");
+        }
         Route* route = router(bump1.gcell, bump2.gcell);
-        route->idx = bump_idx;
+        route->idx = bump1.idx;
         if (route == nullptr) {
             LOG_ERROR("Cannot find route from (" + std::to_string(bump1.gcell->lowerLeft.x) + ", " + std::to_string(bump1.gcell->lowerLeft.y) + ") to (" + std::to_string(bump2.gcell->lowerLeft.x) + ", " + std::to_string(bump2.gcell->lowerLeft.y) + ")");
         } else {
