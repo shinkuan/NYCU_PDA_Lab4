@@ -55,7 +55,7 @@ public:
     void loadCost(const std::string& filename);
     Route* router(GCell* source, GCell* target, int processorId);
 
-    void run();
+    void solve();
 
 private:
     Point<int> routingAreaLowerLeft;         // Real coordinate of lower left corner of routing area

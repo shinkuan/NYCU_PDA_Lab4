@@ -589,7 +589,7 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
     return nullptr;
 }
 
-void Router::run() {
+void Router::solve() {
     // Run
     LOG_INFO("Running router");
 
