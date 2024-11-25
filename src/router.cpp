@@ -332,6 +332,16 @@ void Router::loadCost(const std::string& filename) {
     medianCellCost = costs[medianIndex];
 }
 
+double Router::heuristicManhattan(GCell* a, GCell* b) {
+    // Manhattan distance
+    return (std::abs(a->lowerLeft.x - b->lowerLeft.x) + std::abs(a->lowerLeft.y - b->lowerLeft.y))*alpha*medianCellCost;
+}
+
+double Router::heuristicCustom(GCell* a, GCell* b) {
+    // TODO: Custom heuristic
+    return 0.0;
+}
+
 Route* Router::route(GCell* source, GCell* target, int processorId = 0) {
     // Route
     LOG_INFO("[Processor " + std::to_string(processorId) + "] Routing from (" + std::to_string(source->lowerLeft.x) + ", " + std::to_string(source->lowerLeft.y) + ") to (" + std::to_string(target->lowerLeft.x) + ", " + std::to_string(target->lowerLeft.y) + ")");

@@ -44,6 +44,7 @@
 #include "gcell.h"
 #include "chip.h"
 
+
 class Router {
 public:
     Router();
@@ -74,6 +75,9 @@ private:
     double medianCellCost;                   // Median cell cost
 
     std::vector<Route*> routes;              // Routes
+
+    double heuristicManhattan(GCell* a, GCell* b);
+    double heuristicCustom(GCell* a, GCell* b);
 };
 
 
