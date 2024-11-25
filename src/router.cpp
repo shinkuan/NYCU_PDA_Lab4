@@ -342,6 +342,7 @@ double Router::heuristicCustom(GCell* a, GCell* b) {
     return 0.0;
 }
 
+// https://zh.wikipedia.org/zh-tw/A*搜尋演算法
 Route* Router::route(GCell* source, GCell* target, int processorId = 0) {
     // Route
     LOG_INFO("[Processor " + std::to_string(processorId) + "] Routing from (" + std::to_string(source->lowerLeft.x) + ", " + std::to_string(source->lowerLeft.y) + ") to (" + std::to_string(target->lowerLeft.x) + ", " + std::to_string(target->lowerLeft.y) + ")");
@@ -353,8 +354,220 @@ Route* Router::route(GCell* source, GCell* target, int processorId = 0) {
     std::set<GCell*, decltype(cmp)> openSet(cmp);
 
     source->gScore[processorId] = 0;
+    source->hScore[processorId] = heuristicManhattan(source, target);
+    source->fScore[processorId] = source->gScore[processorId] + source->hScore[processorId];
+    source->fromDirection[processorId] = GCell::FromDirection::ORIGIN;
+    openSet.insert(source);
 
+    while (!openSet.empty()) {
+        GCell* current = *openSet.begin();
+        if (current == target) {
+            Route* route = new Route();
+            while (current != nullptr) {
+                route->push_back(current);
+                current = current->parent[processorId];
+                if (current == source) {
+                    route->push_back(current);
+                    break;
+                }
+            }
+            std::reverse(route->begin(), route->end());
+            return route;
+        }
 
+        openSet.erase(current);
+        closedSet.insert(current);
+
+        if (
+            current->left != nullptr && closedSet.find(current->left) == closedSet.end() &&
+            current->fromDirection[processorId] != GCell::FromDirection::LEFT
+        ) {
+            GCell* neighbor = current->left;
+            double tentativeGScore;
+            // We are going left, so we are using M2 (Horizontal)
+            switch (current->fromDirection[processorId]) {
+                // M1 -> M2
+                case GCell::FromDirection::ORIGIN:
+                case GCell::FromDirection::BOTTOM:
+                case GCell::FromDirection::TOP: {
+                    tentativeGScore = current->gScore[processorId]
+                                    + alpha*gcellSize.x
+                                    // beta
+                                    + gamma*neighbor->costM2
+                                    + delta*viaCost;
+                    break;
+                }
+                // M2 -> M2
+                case GCell::FromDirection::RIGHT: {
+                    tentativeGScore = current->gScore[processorId]
+                                    + alpha*gcellSize.x
+                                    // beta
+                                    + gamma*neighbor->costM2;
+                    break;
+                }
+                default: break;
+            }
+
+            bool tentativeIsBetter = false;
+            if (openSet.find(neighbor) == openSet.end()) {
+                tentativeIsBetter = true;
+            } else if (tentativeGScore < neighbor->gScore[processorId]) {
+                tentativeIsBetter = true;
+            }
+
+            if (tentativeIsBetter) {
+                neighbor->parent[processorId] = current;
+                neighbor->gScore[processorId] = tentativeGScore;
+                neighbor->hScore[processorId] = heuristicManhattan(neighbor, target);
+                neighbor->fScore[processorId] = neighbor->gScore[processorId] + neighbor->hScore[processorId];
+                neighbor->fromDirection[processorId] = GCell::FromDirection::RIGHT;
+                openSet.insert(neighbor);
+            }    
+        }
+
+        if (
+            current->bottom != nullptr && closedSet.find(current->bottom) == closedSet.end() &&
+            current->fromDirection[processorId] != GCell::FromDirection::BOTTOM
+        ) {
+            GCell* neighbor = current->bottom;
+            double tentativeGScore;
+            // We are going bottom, so we are using M1 (Vertical)
+            switch (current->fromDirection[processorId]) {
+                // M1 -> M1
+                case GCell::FromDirection::ORIGIN:
+                case GCell::FromDirection::TOP: {
+                    tentativeGScore = current->gScore[processorId]
+                                    + alpha*gcellSize.y
+                                    // beta
+                                    + gamma*neighbor->costM1;
+                    break;
+                }
+                // M2 -> M1
+                case GCell::FromDirection::LEFT:
+                case GCell::FromDirection::RIGHT: {
+                    tentativeGScore = current->gScore[processorId]
+                                    + alpha*gcellSize.y
+                                    // beta
+                                    + gamma*neighbor->costM1
+                                    + delta*viaCost;
+                    break;
+                }
+                default: break;
+            }
+
+            bool tentativeIsBetter = false;
+            if (openSet.find(neighbor) == openSet.end()) {
+                tentativeIsBetter = true;
+            } else if (tentativeGScore < neighbor->gScore[processorId]) {
+                tentativeIsBetter = true;
+            }
+
+            if (tentativeIsBetter) {
+                neighbor->parent[processorId] = current;
+                neighbor->gScore[processorId] = tentativeGScore;
+                neighbor->hScore[processorId] = heuristicManhattan(neighbor, target);
+                neighbor->fScore[processorId] = neighbor->gScore[processorId] + neighbor->hScore[processorId];
+                neighbor->fromDirection[processorId] = GCell::FromDirection::TOP;
+                openSet.insert(neighbor);
+            }
+        }
+
+        if (
+            current->right != nullptr && closedSet.find(current->right) == closedSet.end() &&
+            current->fromDirection[processorId] != GCell::FromDirection::RIGHT
+        ) {
+            GCell* neighbor = current->right;
+            double tentativeGScore;
+            // We are going right, so we are using M2 (Horizontal)
+            switch (current->fromDirection[processorId]) {
+                // M1 -> M2
+                case GCell::FromDirection::ORIGIN:
+                case GCell::FromDirection::BOTTOM:
+                case GCell::FromDirection::TOP: {
+                    tentativeGScore = current->gScore[processorId]
+                                    + alpha*gcellSize.x
+                                    // beta
+                                    + delta*viaCost
+                                    + gamma*neighbor->costM2;
+                    break;
+                }
+                // M2 -> M2
+                case GCell::FromDirection::LEFT: {
+                    tentativeGScore = current->gScore[processorId]
+                                    + alpha*gcellSize.x
+                                    // beta
+                                    + gamma*neighbor->costM2;
+                    break;
+                }
+                default: break;
+            }
+
+            bool tentativeIsBetter = false;
+            if (openSet.find(neighbor) == openSet.end()) {
+                tentativeIsBetter = true;
+            } else if (tentativeGScore < neighbor->gScore[processorId]) {
+                tentativeIsBetter = true;
+            }
+
+            if (tentativeIsBetter) {
+                neighbor->parent[processorId] = current;
+                neighbor->gScore[processorId] = tentativeGScore;
+                neighbor->hScore[processorId] = heuristicManhattan(neighbor, target);
+                neighbor->fScore[processorId] = neighbor->gScore[processorId] + neighbor->hScore[processorId];
+                neighbor->fromDirection[processorId] = GCell::FromDirection::LEFT;
+                openSet.insert(neighbor);
+            }
+        }
+
+        if (
+            current->top != nullptr && closedSet.find(current->top) == closedSet.end() &&
+            current->fromDirection[processorId] != GCell::FromDirection::TOP
+        ) {
+            GCell* neighbor = current->top;
+            double tentativeGScore;
+            // We are going top, so we are using M1 (Vertical)
+            switch (current->fromDirection[processorId]) {
+                // M1 -> M1
+                case GCell::FromDirection::ORIGIN:
+                case GCell::FromDirection::TOP: {
+                    tentativeGScore = current->gScore[processorId]
+                                    + alpha*gcellSize.y
+                                    // beta
+                                    + gamma*neighbor->costM1;
+                    break;
+                }
+                // M2 -> M1
+                case GCell::FromDirection::LEFT:
+                case GCell::FromDirection::RIGHT: {
+                    tentativeGScore = current->gScore[processorId]
+                                    + alpha*gcellSize.y
+                                    // beta
+                                    + gamma*neighbor->costM1
+                                    + delta*viaCost;
+                    break;
+                }
+                default: break;
+            }
+
+            bool tentativeIsBetter = false;
+            if (openSet.find(neighbor) == openSet.end()) {
+                tentativeIsBetter = true;
+            } else if (tentativeGScore < neighbor->gScore[processorId]) {
+                tentativeIsBetter = true;
+            }
+
+            if (tentativeIsBetter) {
+                neighbor->parent[processorId] = current;
+                neighbor->gScore[processorId] = tentativeGScore;
+                neighbor->hScore[processorId] = heuristicManhattan(neighbor, target);
+                neighbor->fScore[processorId] = neighbor->gScore[processorId] + neighbor->hScore[processorId];
+                neighbor->fromDirection[processorId] = GCell::FromDirection::BOTTOM;
+                openSet.insert(neighbor);
+            }
+        }
+    }
+
+    return nullptr;
 }
 
 void Router::run() {
