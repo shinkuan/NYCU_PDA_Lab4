@@ -311,8 +311,10 @@ void Router::loadCost(const std::string& filename) {
                     iss >> cost;
                     if (currentLayer == 0) {
                         gcells[currentRow][x]->costM1 = cost;
+                        gcells[currentRow][x]->gammaM1 = gamma * cost;
                     } else {
                         gcells[currentRow][x]->costM2 = cost;
+                        gcells[currentRow][x]->gammaM2 = gamma * cost;
                     }
                 }
                 currentRow++;
@@ -334,6 +336,11 @@ void Router::loadCost(const std::string& filename) {
     size_t medianIndex = costs.size() / 2;
     std::nth_element(costs.begin(), costs.begin() + medianIndex, costs.end());
     medianCellCost = costs[medianIndex];
+
+    alphaGcellSizeX = alpha * gcellSize.x;
+    alphaGcellSizeY = alpha * gcellSize.y;
+    betaHalfMaxCellCost = beta * 0.5 * maxCellCost;
+    deltaViaCost = delta * viaCost;
 }
 
 void Router::dumpRoutes(const std::string& filename) {
@@ -488,21 +495,21 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
                 case GCell::FromDirection::BOTTOM:
                 case GCell::FromDirection::TOP: {
                     tentativeGScore = current->gScore[processorId]
-                                    + alpha*gcellSize.x
-                                    + gamma*neighbor->costM2
-                                    + delta*viaCost;
+                                    + alphaGcellSizeX
+                                    + neighbor->gammaM2
+                                    + deltaViaCost;
                     if (current->leftEdgeCount >= current->leftEdgeCapacity) {
-                        tentativeGScore += beta*0.5*maxCellCost;
+                        tentativeGScore += betaHalfMaxCellCost;
                     }
                     break;
                 }
                 // M2 -> M2
                 case GCell::FromDirection::RIGHT: {
                     tentativeGScore = current->gScore[processorId]
-                                    + alpha*gcellSize.x
-                                    + gamma*neighbor->costM2;
+                                    + alphaGcellSizeX
+                                    + neighbor->gammaM2;
                     if (current->leftEdgeCount >= current->leftEdgeCapacity) {
-                        tentativeGScore += beta*0.5*maxCellCost;
+                        tentativeGScore += betaHalfMaxCellCost;
                     }
                     break;
                 }
@@ -541,10 +548,10 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
                 case GCell::FromDirection::ORIGIN:
                 case GCell::FromDirection::TOP: {
                     tentativeGScore = current->gScore[processorId]
-                                    + alpha*gcellSize.y
-                                    + gamma*neighbor->costM1;
+                                    + alphaGcellSizeY
+                                    + neighbor->gammaM1;
                     if (current->bottomEdgeCount >= current->bottomEdgeCapacity) {
-                        tentativeGScore += beta*0.5*maxCellCost;
+                        tentativeGScore += betaHalfMaxCellCost;
                     }
                     break;
                 }
@@ -552,11 +559,11 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
                 case GCell::FromDirection::LEFT:
                 case GCell::FromDirection::RIGHT: {
                     tentativeGScore = current->gScore[processorId]
-                                    + alpha*gcellSize.y
-                                    + gamma*neighbor->costM1
-                                    + delta*viaCost;
+                                    + alphaGcellSizeY
+                                    + neighbor->gammaM1;
+                                    + deltaViaCost;
                     if (current->bottomEdgeCount >= current->bottomEdgeCapacity) {
-                        tentativeGScore += beta*0.5*maxCellCost;
+                        tentativeGScore += betaHalfMaxCellCost;
                     }
                     break;
                 }
@@ -596,21 +603,21 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
                 case GCell::FromDirection::BOTTOM:
                 case GCell::FromDirection::TOP: {
                     tentativeGScore = current->gScore[processorId]
-                                    + alpha*gcellSize.x
-                                    + delta*viaCost
-                                    + gamma*neighbor->costM2;
+                                    + alphaGcellSizeX
+                                    + deltaViaCost
+                                    + neighbor->gammaM2;
                     if (neighbor->leftEdgeCount >= neighbor->leftEdgeCapacity) {
-                        tentativeGScore += beta*0.5*maxCellCost;
+                        tentativeGScore += betaHalfMaxCellCost;
                     }
                     break;
                 }
                 // M2 -> M2
                 case GCell::FromDirection::LEFT: {
                     tentativeGScore = current->gScore[processorId]
-                                    + alpha*gcellSize.x
-                                    + gamma*neighbor->costM2;
+                                    + alphaGcellSizeX
+                                    + neighbor->gammaM2;
                     if (neighbor->leftEdgeCount >= neighbor->leftEdgeCapacity) {
-                        tentativeGScore += beta*0.5*maxCellCost;
+                        tentativeGScore += betaHalfMaxCellCost;
                     }
                     break;
                 }
@@ -649,10 +656,10 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
                 case GCell::FromDirection::ORIGIN:
                 case GCell::FromDirection::BOTTOM: {
                     tentativeGScore = current->gScore[processorId]
-                                    + alpha*gcellSize.y
-                                    + gamma*neighbor->costM1;
+                                    + alphaGcellSizeY
+                                    + neighbor->gammaM1;
                     if (neighbor->bottomEdgeCount >= neighbor->bottomEdgeCapacity) {
-                        tentativeGScore += beta*0.5*maxCellCost;
+                        tentativeGScore += betaHalfMaxCellCost;
                     }
                     break;
                 }
@@ -660,11 +667,11 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
                 case GCell::FromDirection::LEFT:
                 case GCell::FromDirection::RIGHT: {
                     tentativeGScore = current->gScore[processorId]
-                                    + alpha*gcellSize.y
-                                    + gamma*neighbor->costM1
-                                    + delta*viaCost;
+                                    + alphaGcellSizeY
+                                    + neighbor->gammaM1;
+                                    + deltaViaCost;
                     if (neighbor->bottomEdgeCount >= neighbor->bottomEdgeCapacity) {
-                        tentativeGScore += beta*0.5*maxCellCost;
+                        tentativeGScore += betaHalfMaxCellCost;
                     }
                     break;
                 }

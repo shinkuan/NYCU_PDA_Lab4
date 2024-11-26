@@ -75,6 +75,11 @@ private:
     double maxCellCost;                      // Maximum cell cost
     double medianCellCost;                   // Median cell cost
 
+    double alphaGcellSizeX;                  // Alpha * gcellSize.x
+    double alphaGcellSizeY;                  // Alpha * gcellSize.y
+    double betaHalfMaxCellCost;              // Beta * 0.5 * maxCellCost
+    double deltaViaCost;                     // Delta * viaCost
+
     std::vector<Route*> routes;              // Routes
 
     double heuristicManhattan(GCell* a, GCell* b);
