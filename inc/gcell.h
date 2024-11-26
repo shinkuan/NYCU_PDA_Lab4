@@ -37,6 +37,7 @@
 #define _GCELL_H_
 
 #include <vector>
+#include <mutex>
 #include "common.h"
 
 
@@ -86,6 +87,19 @@ public:
     };
     std::vector<FromDirection> fromDirection; // fromDirection[process id] = from direction of parent cell
 
+    std::mutex routesLeftMutex;
+    std::mutex routesBottomMutex;
+
+    void addRouteLeft(Route* route) {
+        std::lock_guard<std::mutex> lock(routesLeftMutex);
+        routesLeft.push_back(route);
+        leftEdgeCount++;
+    }
+    void addRouteBottom(Route* route) {
+        std::lock_guard<std::mutex> lock(routesBottomMutex);
+        routesBottom.push_back(route);
+        bottomEdgeCount++;
+    }
 };
 
 
