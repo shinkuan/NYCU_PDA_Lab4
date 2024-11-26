@@ -422,7 +422,7 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
     std::set<GCell*, decltype(cmp)> openSet(cmp);
 
     source->gScore[processorId] = 0;
-    source->hScore[processorId] = heuristicManhattan(source, target);
+    source->hScore[processorId] = heuristicCustom(source, target);
     source->fScore[processorId] = source->gScore[processorId] + source->hScore[processorId];
     source->fromDirection[processorId] = GCell::FromDirection::ORIGIN;
     openSet.insert(source);
@@ -489,17 +489,21 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
                 case GCell::FromDirection::TOP: {
                     tentativeGScore = current->gScore[processorId]
                                     + alpha*gcellSize.x
-                                    // beta
                                     + gamma*neighbor->costM2
                                     + delta*viaCost;
+                    if (current->leftEdgeCount >= current->leftEdgeCapacity) {
+                        tentativeGScore += beta*0.5*maxCellCost;
+                    }
                     break;
                 }
                 // M2 -> M2
                 case GCell::FromDirection::RIGHT: {
                     tentativeGScore = current->gScore[processorId]
                                     + alpha*gcellSize.x
-                                    // beta
                                     + gamma*neighbor->costM2;
+                    if (current->leftEdgeCount >= current->leftEdgeCapacity) {
+                        tentativeGScore += beta*0.5*maxCellCost;
+                    }
                     break;
                 }
                 default: {
@@ -518,7 +522,7 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
             if (tentativeIsBetter) {
                 neighbor->parent[processorId] = current;
                 neighbor->gScore[processorId] = tentativeGScore;
-                neighbor->hScore[processorId] = heuristicManhattan(neighbor, target);
+                neighbor->hScore[processorId] = heuristicCustom(neighbor, target);
                 neighbor->fScore[processorId] = neighbor->gScore[processorId] + neighbor->hScore[processorId];
                 neighbor->fromDirection[processorId] = GCell::FromDirection::RIGHT;
                 openSet.insert(neighbor);
@@ -538,8 +542,10 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
                 case GCell::FromDirection::TOP: {
                     tentativeGScore = current->gScore[processorId]
                                     + alpha*gcellSize.y
-                                    // beta
                                     + gamma*neighbor->costM1;
+                    if (current->bottomEdgeCount >= current->bottomEdgeCapacity) {
+                        tentativeGScore += beta*0.5*maxCellCost;
+                    }
                     break;
                 }
                 // M2 -> M1
@@ -547,9 +553,11 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
                 case GCell::FromDirection::RIGHT: {
                     tentativeGScore = current->gScore[processorId]
                                     + alpha*gcellSize.y
-                                    // beta
                                     + gamma*neighbor->costM1
                                     + delta*viaCost;
+                    if (current->bottomEdgeCount >= current->bottomEdgeCapacity) {
+                        tentativeGScore += beta*0.5*maxCellCost;
+                    }
                     break;
                 }
                 default: {
@@ -568,7 +576,7 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
             if (tentativeIsBetter) {
                 neighbor->parent[processorId] = current;
                 neighbor->gScore[processorId] = tentativeGScore;
-                neighbor->hScore[processorId] = heuristicManhattan(neighbor, target);
+                neighbor->hScore[processorId] = heuristicCustom(neighbor, target);
                 neighbor->fScore[processorId] = neighbor->gScore[processorId] + neighbor->hScore[processorId];
                 neighbor->fromDirection[processorId] = GCell::FromDirection::TOP;
                 openSet.insert(neighbor);
@@ -589,17 +597,21 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
                 case GCell::FromDirection::TOP: {
                     tentativeGScore = current->gScore[processorId]
                                     + alpha*gcellSize.x
-                                    // beta
                                     + delta*viaCost
                                     + gamma*neighbor->costM2;
+                    if (neighbor->leftEdgeCount >= neighbor->leftEdgeCapacity) {
+                        tentativeGScore += beta*0.5*maxCellCost;
+                    }
                     break;
                 }
                 // M2 -> M2
                 case GCell::FromDirection::LEFT: {
                     tentativeGScore = current->gScore[processorId]
                                     + alpha*gcellSize.x
-                                    // beta
                                     + gamma*neighbor->costM2;
+                    if (neighbor->leftEdgeCount >= neighbor->leftEdgeCapacity) {
+                        tentativeGScore += beta*0.5*maxCellCost;
+                    }
                     break;
                 }
                 default: {
@@ -618,7 +630,7 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
             if (tentativeIsBetter) {
                 neighbor->parent[processorId] = current;
                 neighbor->gScore[processorId] = tentativeGScore;
-                neighbor->hScore[processorId] = heuristicManhattan(neighbor, target);
+                neighbor->hScore[processorId] = heuristicCustom(neighbor, target);
                 neighbor->fScore[processorId] = neighbor->gScore[processorId] + neighbor->hScore[processorId];
                 neighbor->fromDirection[processorId] = GCell::FromDirection::LEFT;
                 openSet.insert(neighbor);
@@ -638,8 +650,10 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
                 case GCell::FromDirection::BOTTOM: {
                     tentativeGScore = current->gScore[processorId]
                                     + alpha*gcellSize.y
-                                    // beta
                                     + gamma*neighbor->costM1;
+                    if (neighbor->bottomEdgeCount >= neighbor->bottomEdgeCapacity) {
+                        tentativeGScore += beta*0.5*maxCellCost;
+                    }
                     break;
                 }
                 // M2 -> M1
@@ -647,9 +661,11 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
                 case GCell::FromDirection::RIGHT: {
                     tentativeGScore = current->gScore[processorId]
                                     + alpha*gcellSize.y
-                                    // beta
                                     + gamma*neighbor->costM1
                                     + delta*viaCost;
+                    if (neighbor->bottomEdgeCount >= neighbor->bottomEdgeCapacity) {
+                        tentativeGScore += beta*0.5*maxCellCost;
+                    }
                     break;
                 }
                 default: {
@@ -668,7 +684,7 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
             if (tentativeIsBetter) {
                 neighbor->parent[processorId] = current;
                 neighbor->gScore[processorId] = tentativeGScore;
-                neighbor->hScore[processorId] = heuristicManhattan(neighbor, target);
+                neighbor->hScore[processorId] = heuristicCustom(neighbor, target);
                 neighbor->fScore[processorId] = neighbor->gScore[processorId] + neighbor->hScore[processorId];
                 neighbor->fromDirection[processorId] = GCell::FromDirection::BOTTOM;
                 openSet.insert(neighbor);
