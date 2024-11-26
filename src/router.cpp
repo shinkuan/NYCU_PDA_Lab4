@@ -434,8 +434,34 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
             LOG_TRACE("[Processor " + std::to_string(processorId) + "] Found target");
             Route* route = new Route();
             while (current != nullptr) {
+                GCell* next = current->parent[processorId];
+                switch (current->fromDirection[processorId]) {
+                    case GCell::FromDirection::ORIGIN: {
+                        break;
+                    }
+                    case GCell::FromDirection::LEFT: {
+                        current->addRouteLeft(route);
+                        break;
+                    }
+                    case GCell::FromDirection::BOTTOM: {
+                        current->addRouteBottom(route);
+                        break;
+                    }
+                    case GCell::FromDirection::RIGHT: {
+                        next->addRouteLeft(route);
+                        break;
+                    }
+                    case GCell::FromDirection::TOP: {
+                        next->addRouteBottom(route);
+                        break;
+                    }
+                    default: {
+                        LOG_ERROR("Unknown from direction");
+                        return nullptr;
+                    }
+                }
                 route->route.push_back(current);
-                current = current->parent[processorId];
+                current = next;
                 if (current == source) {
                     route->route.push_back(current);
                     break;
