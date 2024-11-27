@@ -1,6 +1,5 @@
 #include <iostream>
 #include <chrono>
-#include <omp.h>
 #include "common.h"
 #include "router.h"
 
@@ -9,7 +8,6 @@ int main(int argc, char* argv[]) {
         std::cerr << "Usage: " << argv[0] << " <gmp_file> <gcl_file> <cst_file> <lg_file>" << std::endl;
         return 1;
     }
-    omp_set_num_threads(PROCESSOR_COUNT); // Limit OpenMP threads to PROCESSOR_COUNT
 
     auto start = std::chrono::high_resolution_clock::now();
 

@@ -137,11 +137,11 @@ void Router::loadGridMap(const std::string& filename) {
     for (size_t y = 0; y < gcells.size(); y++) {
         for (size_t x = 0; x < gcells[y].size(); x++) {
             GCell* gcell = new GCell();
-            gcell->parent.resize(PROCESSOR_COUNT, nullptr);
-            gcell->fScore.resize(PROCESSOR_COUNT, DBL_MAX);
-            gcell->gScore.resize(PROCESSOR_COUNT, DBL_MAX);
-            gcell->hScore.resize(PROCESSOR_COUNT, DBL_MAX);
-            gcell->fromDirection.resize(PROCESSOR_COUNT, GCell::FromDirection::ORIGIN);
+            gcell->parent = nullptr;
+            gcell->fScore = DBL_MAX;
+            gcell->gScore = DBL_MAX;
+            gcell->hScore = DBL_MAX;
+            gcell->fromDirection = GCell::FromDirection::ORIGIN;
             gcell->lowerLeft = {static_cast<int>(x) * gcellSize.x + routingAreaLowerLeft.x, static_cast<int>(y) * gcellSize.y + routingAreaLowerLeft.y};
             gcells[y][x] = gcell;
         }
@@ -418,21 +418,21 @@ double Router::heuristicCustom(GCell* a, GCell* b) {
 }
 
 // https://zh.wikipedia.org/zh-tw/A*搜尋演算法
-Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
+Route* Router::router(GCell* source, GCell* target) {
     // Route
-    LOG_INFO("[Processor " + std::to_string(processorId) + "] Routing from (" + std::to_string(source->lowerLeft.x) + ", " + std::to_string(source->lowerLeft.y) + ") to (" + std::to_string(target->lowerLeft.x) + ", " + std::to_string(target->lowerLeft.y) + ")");
+    LOG_INFO("Routing from (" + std::to_string(source->lowerLeft.x) + ", " + std::to_string(source->lowerLeft.y) + ") to (" + std::to_string(target->lowerLeft.x) + ", " + std::to_string(target->lowerLeft.y) + ")");
     
-    const auto cmp = [processorId](GCell* a, GCell* b) {
-        return a->fScore[processorId] > b->fScore[processorId];
+    const auto cmp = [](GCell* a, GCell* b) {
+        return a->fScore > b->fScore;
     };
     std::unordered_set<GCell*> closedSet;
     std::unordered_set<GCell*> openSet;
     std::priority_queue<GCell*, std::vector<GCell*>, decltype(cmp)> openSetQ(cmp);
 
-    source->gScore[processorId] = 0;
-    source->hScore[processorId] = heuristicCustom(source, target);
-    source->fScore[processorId] = source->gScore[processorId] + source->hScore[processorId];
-    source->fromDirection[processorId] = GCell::FromDirection::ORIGIN;
+    source->gScore = 0;
+    source->hScore = heuristicCustom(source, target);
+    source->fScore = source->gScore + source->hScore;
+    source->fromDirection = GCell::FromDirection::ORIGIN;
     openSet.insert(source);
     openSetQ.push(source);
 
@@ -447,11 +447,11 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
             openSetQ.pop();
         }
         if (current == target) {
-            LOG_TRACE("[Processor " + std::to_string(processorId) + "] Found target");
+            LOG_TRACE("Found target");
             Route* route = new Route();
             while (current != nullptr) {
-                GCell* next = current->parent[processorId];
-                switch (current->fromDirection[processorId]) {
+                GCell* next = current->parent;
+                switch (current->fromDirection) {
                     case GCell::FromDirection::ORIGIN: {
                         break;
                     }
@@ -490,20 +490,20 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
         openSet.erase(current);
         closedSet.insert(current);
 
-        LOG_TRACE("[Processor " + std::to_string(processorId) + "] Current cell: (" + std::to_string(current->lowerLeft.x) + ", " + std::to_string(current->lowerLeft.y) + ")");
+        LOG_TRACE("Current cell: (" + std::to_string(current->lowerLeft.x) + ", " + std::to_string(current->lowerLeft.y) + ")");
         if (
             current->left != nullptr && closedSet.find(current->left) == closedSet.end() &&
-            current->fromDirection[processorId] != GCell::FromDirection::LEFT
+            current->fromDirection != GCell::FromDirection::LEFT
         ) {
             GCell* neighbor = current->left;
             double tentativeGScore;
             // We are going left, so we are using M2 (Horizontal)
-            switch (current->fromDirection[processorId]) {
+            switch (current->fromDirection) {
                 // M1 -> M2
                 case GCell::FromDirection::ORIGIN:
                 case GCell::FromDirection::BOTTOM:
                 case GCell::FromDirection::TOP: {
-                    tentativeGScore = current->gScore[processorId]
+                    tentativeGScore = current->gScore
                                     + alphaGcellSizeX
                                     + neighbor->gammaM2
                                     + deltaViaCost;
@@ -514,7 +514,7 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
                 }
                 // M2 -> M2
                 case GCell::FromDirection::RIGHT: {
-                    tentativeGScore = current->gScore[processorId]
+                    tentativeGScore = current->gScore
                                     + alphaGcellSizeX
                                     + neighbor->gammaM2;
                     if (current->leftEdgeCount >= current->leftEdgeCapacity) {
@@ -531,16 +531,16 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
             bool tentativeIsBetter = false;
             if (openSet.find(neighbor) == openSet.end()) {
                 tentativeIsBetter = true;
-            } else if (tentativeGScore < neighbor->gScore[processorId]) {
+            } else if (tentativeGScore < neighbor->gScore) {
                 tentativeIsBetter = true;
             }
 
             if (tentativeIsBetter) {
-                neighbor->parent[processorId] = current;
-                neighbor->gScore[processorId] = tentativeGScore;
-                neighbor->hScore[processorId] = heuristicCustom(neighbor, target);
-                neighbor->fScore[processorId] = neighbor->gScore[processorId] + neighbor->hScore[processorId];
-                neighbor->fromDirection[processorId] = GCell::FromDirection::RIGHT;
+                neighbor->parent = current;
+                neighbor->gScore = tentativeGScore;
+                neighbor->hScore = heuristicCustom(neighbor, target);
+                neighbor->fScore = neighbor->gScore + neighbor->hScore;
+                neighbor->fromDirection = GCell::FromDirection::RIGHT;
                 openSet.insert(neighbor);
                 openSetQ.push(neighbor);
             }    
@@ -548,16 +548,16 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
 
         if (
             current->bottom != nullptr && closedSet.find(current->bottom) == closedSet.end() &&
-            current->fromDirection[processorId] != GCell::FromDirection::BOTTOM
+            current->fromDirection != GCell::FromDirection::BOTTOM
         ) {
             GCell* neighbor = current->bottom;
             double tentativeGScore;
             // We are going bottom, so we are using M1 (Vertical)
-            switch (current->fromDirection[processorId]) {
+            switch (current->fromDirection) {
                 // M1 -> M1
                 case GCell::FromDirection::ORIGIN:
                 case GCell::FromDirection::TOP: {
-                    tentativeGScore = current->gScore[processorId]
+                    tentativeGScore = current->gScore
                                     + alphaGcellSizeY
                                     + neighbor->gammaM1;
                     if (current->bottomEdgeCount >= current->bottomEdgeCapacity) {
@@ -568,7 +568,7 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
                 // M2 -> M1
                 case GCell::FromDirection::LEFT:
                 case GCell::FromDirection::RIGHT: {
-                    tentativeGScore = current->gScore[processorId]
+                    tentativeGScore = current->gScore
                                     + alphaGcellSizeY
                                     + neighbor->gammaM1
                                     + deltaViaCost;
@@ -586,16 +586,16 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
             bool tentativeIsBetter = false;
             if (openSet.find(neighbor) == openSet.end()) {
                 tentativeIsBetter = true;
-            } else if (tentativeGScore < neighbor->gScore[processorId]) {
+            } else if (tentativeGScore < neighbor->gScore) {
                 tentativeIsBetter = true;
             }
 
             if (tentativeIsBetter) {
-                neighbor->parent[processorId] = current;
-                neighbor->gScore[processorId] = tentativeGScore;
-                neighbor->hScore[processorId] = heuristicCustom(neighbor, target);
-                neighbor->fScore[processorId] = neighbor->gScore[processorId] + neighbor->hScore[processorId];
-                neighbor->fromDirection[processorId] = GCell::FromDirection::TOP;
+                neighbor->parent = current;
+                neighbor->gScore = tentativeGScore;
+                neighbor->hScore = heuristicCustom(neighbor, target);
+                neighbor->fScore = neighbor->gScore + neighbor->hScore;
+                neighbor->fromDirection = GCell::FromDirection::TOP;
                 openSet.insert(neighbor);
                 openSetQ.push(neighbor);
             }
@@ -603,17 +603,17 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
 
         if (
             current->right != nullptr && closedSet.find(current->right) == closedSet.end() &&
-            current->fromDirection[processorId] != GCell::FromDirection::RIGHT
+            current->fromDirection != GCell::FromDirection::RIGHT
         ) {
             GCell* neighbor = current->right;
             double tentativeGScore;
             // We are going right, so we are using M2 (Horizontal)
-            switch (current->fromDirection[processorId]) {
+            switch (current->fromDirection) {
                 // M1 -> M2
                 case GCell::FromDirection::ORIGIN:
                 case GCell::FromDirection::BOTTOM:
                 case GCell::FromDirection::TOP: {
-                    tentativeGScore = current->gScore[processorId]
+                    tentativeGScore = current->gScore
                                     + alphaGcellSizeX
                                     + deltaViaCost
                                     + neighbor->gammaM2;
@@ -624,7 +624,7 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
                 }
                 // M2 -> M2
                 case GCell::FromDirection::LEFT: {
-                    tentativeGScore = current->gScore[processorId]
+                    tentativeGScore = current->gScore
                                     + alphaGcellSizeX
                                     + neighbor->gammaM2;
                     if (neighbor->leftEdgeCount >= neighbor->leftEdgeCapacity) {
@@ -641,16 +641,16 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
             bool tentativeIsBetter = false;
             if (openSet.find(neighbor) == openSet.end()) {
                 tentativeIsBetter = true;
-            } else if (tentativeGScore < neighbor->gScore[processorId]) {
+            } else if (tentativeGScore < neighbor->gScore) {
                 tentativeIsBetter = true;
             }
 
             if (tentativeIsBetter) {
-                neighbor->parent[processorId] = current;
-                neighbor->gScore[processorId] = tentativeGScore;
-                neighbor->hScore[processorId] = heuristicCustom(neighbor, target);
-                neighbor->fScore[processorId] = neighbor->gScore[processorId] + neighbor->hScore[processorId];
-                neighbor->fromDirection[processorId] = GCell::FromDirection::LEFT;
+                neighbor->parent = current;
+                neighbor->gScore = tentativeGScore;
+                neighbor->hScore = heuristicCustom(neighbor, target);
+                neighbor->fScore = neighbor->gScore + neighbor->hScore;
+                neighbor->fromDirection = GCell::FromDirection::LEFT;
                 openSet.insert(neighbor);
                 openSetQ.push(neighbor);
             }
@@ -658,16 +658,16 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
 
         if (
             current->top != nullptr && closedSet.find(current->top) == closedSet.end() &&
-            current->fromDirection[processorId] != GCell::FromDirection::TOP
+            current->fromDirection != GCell::FromDirection::TOP
         ) {
             GCell* neighbor = current->top;
             double tentativeGScore;
             // We are going top, so we are using M1 (Vertical)
-            switch (current->fromDirection[processorId]) {
+            switch (current->fromDirection) {
                 // M1 -> M1
                 case GCell::FromDirection::ORIGIN:
                 case GCell::FromDirection::BOTTOM: {
-                    tentativeGScore = current->gScore[processorId]
+                    tentativeGScore = current->gScore
                                     + alphaGcellSizeY
                                     + neighbor->gammaM1;
                     if (neighbor->bottomEdgeCount >= neighbor->bottomEdgeCapacity) {
@@ -678,7 +678,7 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
                 // M2 -> M1
                 case GCell::FromDirection::LEFT:
                 case GCell::FromDirection::RIGHT: {
-                    tentativeGScore = current->gScore[processorId]
+                    tentativeGScore = current->gScore
                                     + alphaGcellSizeY
                                     + neighbor->gammaM1
                                     + deltaViaCost;
@@ -696,16 +696,16 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
             bool tentativeIsBetter = false;
             if (openSet.find(neighbor) == openSet.end()) {
                 tentativeIsBetter = true;
-            } else if (tentativeGScore < neighbor->gScore[processorId]) {
+            } else if (tentativeGScore < neighbor->gScore) {
                 tentativeIsBetter = true;
             }
 
             if (tentativeIsBetter) {
-                neighbor->parent[processorId] = current;
-                neighbor->gScore[processorId] = tentativeGScore;
-                neighbor->hScore[processorId] = heuristicCustom(neighbor, target);
-                neighbor->fScore[processorId] = neighbor->gScore[processorId] + neighbor->hScore[processorId];
-                neighbor->fromDirection[processorId] = GCell::FromDirection::BOTTOM;
+                neighbor->parent = current;
+                neighbor->gScore = tentativeGScore;
+                neighbor->hScore = heuristicCustom(neighbor, target);
+                neighbor->fScore = neighbor->gScore + neighbor->hScore;
+                neighbor->fromDirection = GCell::FromDirection::BOTTOM;
                 openSet.insert(neighbor);
                 openSetQ.push(neighbor);
             }

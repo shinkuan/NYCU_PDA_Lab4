@@ -75,10 +75,10 @@ public:
     std::vector<Route*> routesLeft;     // Routes passed left edge
     std::vector<Route*> routesBottom;   // Routes passed bottom edge
 
-    std::vector<GCell*> parent;         // parent[process id] = parent cell
-    std::vector<double> fScore;         // fScore[process id] = gScore[process id] + hScore[process id]
-    std::vector<double> gScore;         // gScore[process id] = cost of the cheapest path from start to current cell
-    std::vector<double> hScore;         // hScore[process id] = estimated cost from current cell to target
+    GCell* parent;         // parent = parent cell
+    double fScore;         // fScore = gScore + hScore
+    double gScore;         // gScore = cost of the cheapest path from start to current cell
+    double hScore;         // hScore = estimated cost from current cell to target
 
     enum class FromDirection {
         ORIGIN,
@@ -87,18 +87,13 @@ public:
         RIGHT,
         TOP
     };
-    std::vector<FromDirection> fromDirection; // fromDirection[process id] = from direction of parent cell
-
-    std::mutex routesLeftMutex;
-    std::mutex routesBottomMutex;
+    FromDirection fromDirection; // fromDirection = from direction of parent cell
 
     void addRouteLeft(Route* route) {
-        std::lock_guard<std::mutex> lock(routesLeftMutex);
         routesLeft.push_back(route);
         leftEdgeCount++;
     }
     void addRouteBottom(Route* route) {
-        std::lock_guard<std::mutex> lock(routesBottomMutex);
         routesBottom.push_back(route);
         bottomEdgeCount++;
     }
