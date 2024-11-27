@@ -4,6 +4,7 @@
 #include <iostream>
 #include <algorithm>
 #include <set>
+#include <queue>
 #include <unordered_set>
 #include "router.h"
 #include "logger.h"
@@ -286,7 +287,6 @@ void Router::loadCost(const std::string& filename) {
                     state = State::LoadingCommand;
                     LOG_TRACE("Gamma: " + std::to_string(gamma));
                 } else if (command == ".delta") {
-                    double delta;
                     iss >> delta;
                     state = State::LoadingCommand;
                     LOG_TRACE("Delta: " + std::to_string(delta));
@@ -303,12 +303,12 @@ void Router::loadCost(const std::string& filename) {
             }
             case State::LoadingLayer: {
                 double cost;
-                if (cost != 0) costs.push_back(cost);
-                if (cost > maxCellCost) {
-                    maxCellCost = cost;
-                }
                 for (size_t x = 0; x < gcells[currentRow].size(); x++) {
                     iss >> cost;
+                    if (cost != 0) costs.push_back(cost);
+                    if (cost > maxCellCost) {
+                        maxCellCost = cost;
+                    }
                     if (currentLayer == 0) {
                         gcells[currentRow][x]->costM1 = cost;
                         gcells[currentRow][x]->gammaM1 = gamma * cost;
@@ -423,20 +423,29 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
     LOG_INFO("[Processor " + std::to_string(processorId) + "] Routing from (" + std::to_string(source->lowerLeft.x) + ", " + std::to_string(source->lowerLeft.y) + ") to (" + std::to_string(target->lowerLeft.x) + ", " + std::to_string(target->lowerLeft.y) + ")");
     
     const auto cmp = [processorId](GCell* a, GCell* b) {
-        return a->fScore[processorId] < b->fScore[processorId];
+        return a->fScore[processorId] > b->fScore[processorId];
     };
     std::unordered_set<GCell*> closedSet;
-    std::set<GCell*, decltype(cmp)> openSet(cmp);
+    std::unordered_set<GCell*> openSet;
+    std::priority_queue<GCell*, std::vector<GCell*>, decltype(cmp)> openSetQ(cmp);
 
     source->gScore[processorId] = 0;
     source->hScore[processorId] = heuristicCustom(source, target);
     source->fScore[processorId] = source->gScore[processorId] + source->hScore[processorId];
     source->fromDirection[processorId] = GCell::FromDirection::ORIGIN;
     openSet.insert(source);
+    openSetQ.push(source);
 
     while (!openSet.empty()) {
-        auto it = openSet.begin();
-        GCell* current = *it;
+        GCell* current;
+        while (true) {
+            current = openSetQ.top();
+            if (openSet.find(current) != openSet.end()) {
+                openSetQ.pop();
+                break;
+            }
+            openSetQ.pop();
+        }
         if (current == target) {
             LOG_TRACE("[Processor " + std::to_string(processorId) + "] Found target");
             Route* route = new Route();
@@ -478,7 +487,7 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
             return route;
         }
 
-        openSet.erase(it);
+        openSet.erase(current);
         closedSet.insert(current);
 
         LOG_TRACE("[Processor " + std::to_string(processorId) + "] Current cell: (" + std::to_string(current->lowerLeft.x) + ", " + std::to_string(current->lowerLeft.y) + ")");
@@ -533,6 +542,7 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
                 neighbor->fScore[processorId] = neighbor->gScore[processorId] + neighbor->hScore[processorId];
                 neighbor->fromDirection[processorId] = GCell::FromDirection::RIGHT;
                 openSet.insert(neighbor);
+                openSetQ.push(neighbor);
             }    
         }
 
@@ -560,7 +570,7 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
                 case GCell::FromDirection::RIGHT: {
                     tentativeGScore = current->gScore[processorId]
                                     + alphaGcellSizeY
-                                    + neighbor->gammaM1;
+                                    + neighbor->gammaM1
                                     + deltaViaCost;
                     if (current->bottomEdgeCount >= current->bottomEdgeCapacity) {
                         tentativeGScore += betaHalfMaxCellCost;
@@ -587,6 +597,7 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
                 neighbor->fScore[processorId] = neighbor->gScore[processorId] + neighbor->hScore[processorId];
                 neighbor->fromDirection[processorId] = GCell::FromDirection::TOP;
                 openSet.insert(neighbor);
+                openSetQ.push(neighbor);
             }
         }
 
@@ -641,6 +652,7 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
                 neighbor->fScore[processorId] = neighbor->gScore[processorId] + neighbor->hScore[processorId];
                 neighbor->fromDirection[processorId] = GCell::FromDirection::LEFT;
                 openSet.insert(neighbor);
+                openSetQ.push(neighbor);
             }
         }
 
@@ -668,7 +680,7 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
                 case GCell::FromDirection::RIGHT: {
                     tentativeGScore = current->gScore[processorId]
                                     + alphaGcellSizeY
-                                    + neighbor->gammaM1;
+                                    + neighbor->gammaM1
                                     + deltaViaCost;
                     if (neighbor->bottomEdgeCount >= neighbor->bottomEdgeCapacity) {
                         tentativeGScore += betaHalfMaxCellCost;
@@ -695,6 +707,7 @@ Route* Router::router(GCell* source, GCell* target, int processorId = 0) {
                 neighbor->fScore[processorId] = neighbor->gScore[processorId] + neighbor->hScore[processorId];
                 neighbor->fromDirection[processorId] = GCell::FromDirection::BOTTOM;
                 openSet.insert(neighbor);
+                openSetQ.push(neighbor);
             }
         }
     }
