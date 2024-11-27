@@ -263,7 +263,7 @@ class Visualizer(object):
             color = color_cycle[i % len(color_cycle)]
             route_x = [point.x for point in route]
             route_y = [point.y for point in route]
-            plt.plot(route_x, route_y, color=color, linewidth=2)
+            plt.plot(route_x, route_y, color=color, linewidth=1.5)
         
         plt.title('Chip Placement and Routing')
         plt.xlabel('X coordinate')
@@ -293,4 +293,4 @@ if __name__ == '__main__':
 
     # Strip the extension
     gmp_file = Path(gmp_file).stem
-    visualizer.draw_placement(f"{gmp_file}_placement.png")
+    visualizer.draw_placement(f"./images/{gmp_file}_placement.png")
