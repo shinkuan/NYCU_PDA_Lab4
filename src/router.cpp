@@ -341,6 +341,11 @@ void Router::loadCost(const std::string& filename) {
     alphaGcellSizeY = alpha * gcellSize.y;
     betaHalfMaxCellCost = beta * 0.5 * maxCellCost;
     deltaViaCost = delta * viaCost;
+    for (auto& row : gcells) {
+        for (auto& gcell : row) {
+            gcell->M1M2ViaCost = deltaViaCost + (gcell->gammaM1 + gcell->gammaM2) / 2;
+        }
+    }
 }
 
 void Router::dumpRoutes(const std::string& filename) {
@@ -506,7 +511,8 @@ Route* Router::router(GCell* source, GCell* target) {
                     tentativeGScore = current->gScore
                                     + alphaGcellSizeX
                                     + neighbor->gammaM2
-                                    + deltaViaCost;
+                                    - current->gammaM1
+                                    + current->M1M2ViaCost;
                     if (current->leftEdgeCount >= current->leftEdgeCapacity) {
                         tentativeGScore += betaHalfMaxCellCost;
                     }
@@ -571,7 +577,8 @@ Route* Router::router(GCell* source, GCell* target) {
                     tentativeGScore = current->gScore
                                     + alphaGcellSizeY
                                     + neighbor->gammaM1
-                                    + deltaViaCost;
+                                    - current->gammaM2
+                                    + current->M1M2ViaCost;
                     if (current->bottomEdgeCount >= current->bottomEdgeCapacity) {
                         tentativeGScore += betaHalfMaxCellCost;
                     }
@@ -615,8 +622,9 @@ Route* Router::router(GCell* source, GCell* target) {
                 case GCell::FromDirection::TOP: {
                     tentativeGScore = current->gScore
                                     + alphaGcellSizeX
-                                    + deltaViaCost
-                                    + neighbor->gammaM2;
+                                    + neighbor->gammaM2
+                                    - current->gammaM1
+                                    + current->M1M2ViaCost;
                     if (neighbor->leftEdgeCount >= neighbor->leftEdgeCapacity) {
                         tentativeGScore += betaHalfMaxCellCost;
                     }
@@ -681,7 +689,8 @@ Route* Router::router(GCell* source, GCell* target) {
                     tentativeGScore = current->gScore
                                     + alphaGcellSizeY
                                     + neighbor->gammaM1
-                                    + deltaViaCost;
+                                    - current->gammaM2
+                                    + current->M1M2ViaCost;
                     if (neighbor->bottomEdgeCount >= neighbor->bottomEdgeCapacity) {
                         tentativeGScore += betaHalfMaxCellCost;
                     }
