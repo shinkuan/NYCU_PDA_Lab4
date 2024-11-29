@@ -88,7 +88,8 @@ public:
         RIGHT,
         TOP
     };
-    FromDirection fromDirection; // fromDirection = from direction of parent cell
+    FromDirection fromDirectionForward; // fromDirectionForward = from direction of forward search
+    FromDirection fromDirectionBackward; // fromDirectionBackward = from direction of backward search
 
     void addRouteLeft(Route* route) {
         routesLeft.push_back(route);
