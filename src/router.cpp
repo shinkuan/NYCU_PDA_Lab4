@@ -138,12 +138,8 @@ void Router::loadGridMap(const std::string& filename) {
         for (size_t x = 0; x < gcells[y].size(); x++) {
             GCell* gcell = new GCell();
             gcell->parent = nullptr;
-            gcell->fScoreForward = DBL_MAX;
             gcell->gScoreForward = DBL_MAX;
-            gcell->hScoreForward = DBL_MAX;
-            gcell->fScoreBackward = DBL_MAX;
             gcell->gScoreBackward = DBL_MAX;
-            gcell->hScoreBackward = DBL_MAX;
             gcell->fromDirectionForward = GCell::FromDirection::ORIGIN;
             gcell->fromDirectionBackward = GCell::FromDirection::ORIGIN;
             gcell->lowerLeft = {static_cast<int>(x) * gcellSize.x + routingAreaLowerLeft.x, static_cast<int>(y) * gcellSize.y + routingAreaLowerLeft.y};
@@ -416,45 +412,31 @@ void Router::dumpRoutes(const std::string& filename) {
     file.close();
 }
 
-double Router::heuristicManhattan(GCell* a, GCell* b) {
-    // Manhattan distance
-    return (std::abs(a->lowerLeft.x - b->lowerLeft.x) + std::abs(a->lowerLeft.y - b->lowerLeft.y))*alpha*medianCellCost;
-}
-
-double Router::heuristicCustom(GCell* a, GCell* b) {
-    // TODO: Custom heuristic
-    return 0.0;
-}
-
 // https://zh.wikipedia.org/zh-tw/A*搜尋演算法
 Route* Router::router(GCell* source, GCell* target) {
     // Route
     LOG_INFO("Routing from (" + std::to_string(source->lowerLeft.x) + ", " + std::to_string(source->lowerLeft.y) + ") to (" + std::to_string(target->lowerLeft.x) + ", " + std::to_string(target->lowerLeft.y) + ")");
     
     const auto cmpF = [](GCell* a, GCell* b) {
-        return a->fScoreForward > b->fScoreForward;
+        return a->gScoreForward > b->gScoreForward;
     };
     std::unordered_set<GCell*> forwardClosedSet;
     std::unordered_set<GCell*> forwardOpenSet;
     std::priority_queue<GCell*, std::vector<GCell*>, decltype(cmpF)> forwardOpenSetQ(cmpF);
 
     const auto cmpB = [](GCell* a, GCell* b) {
-        return a->fScoreBackward > b->fScoreBackward;
+        return a->gScoreBackward > b->gScoreBackward;
     };
     std::unordered_set<GCell*> backwardClosedSet;
     std::unordered_set<GCell*> backwardOpenSet;
     std::priority_queue<GCell*, std::vector<GCell*>, decltype(cmpB)> backwardOpenSetQ(cmpB);
 
     source->gScoreForward = source->costM1;
-    source->hScoreForward = heuristicCustom(source, target);
-    source->fScoreForward = source->gScoreForward + source->hScoreForward;
     source->fromDirectionForward = GCell::FromDirection::ORIGIN;
     forwardOpenSet.insert(source);
     forwardOpenSetQ.push(source);
 
     target->gScoreBackward = target->costM1;
-    target->hScoreBackward = heuristicCustom(target, source);
-    target->fScoreBackward = target->gScoreBackward + target->hScoreBackward;
     target->fromDirectionBackward = GCell::FromDirection::ORIGIN;
     backwardOpenSet.insert(target);
     backwardOpenSetQ.push(target);
@@ -609,8 +591,6 @@ Route* Router::router(GCell* source, GCell* target) {
             if (tentativeIsBetter) {
                 neighbor->parent = forwardCurrent;
                 neighbor->gScoreForward = tentativeGScore;
-                neighbor->hScoreForward = heuristicCustom(neighbor, target);
-                neighbor->fScoreForward = neighbor->gScoreForward + neighbor->hScoreForward;
                 neighbor->fromDirectionForward = GCell::FromDirection::RIGHT;
                 forwardOpenSet.insert(neighbor);
                 forwardOpenSetQ.push(neighbor);
@@ -665,8 +645,6 @@ Route* Router::router(GCell* source, GCell* target) {
             if (tentativeIsBetter) {
                 neighbor->parent = forwardCurrent;
                 neighbor->gScoreForward = tentativeGScore;
-                neighbor->hScoreForward = heuristicCustom(neighbor, target);
-                neighbor->fScoreForward = neighbor->gScoreForward + neighbor->hScoreForward;
                 neighbor->fromDirectionForward = GCell::FromDirection::TOP;
                 forwardOpenSet.insert(neighbor);
                 forwardOpenSetQ.push(neighbor);
@@ -721,8 +699,6 @@ Route* Router::router(GCell* source, GCell* target) {
             if (tentativeIsBetter) {
                 neighbor->parent = forwardCurrent;
                 neighbor->gScoreForward = tentativeGScore;
-                neighbor->hScoreForward = heuristicCustom(neighbor, target);
-                neighbor->fScoreForward = neighbor->gScoreForward + neighbor->hScoreForward;
                 neighbor->fromDirectionForward = GCell::FromDirection::LEFT;
                 forwardOpenSet.insert(neighbor);
                 forwardOpenSetQ.push(neighbor);
@@ -777,8 +753,6 @@ Route* Router::router(GCell* source, GCell* target) {
             if (tentativeIsBetter) {
                 neighbor->parent = forwardCurrent;
                 neighbor->gScoreForward = tentativeGScore;
-                neighbor->hScoreForward = heuristicCustom(neighbor, target);
-                neighbor->fScoreForward = neighbor->gScoreForward + neighbor->hScoreForward;
                 neighbor->fromDirectionForward = GCell::FromDirection::BOTTOM;
                 forwardOpenSet.insert(neighbor);
                 forwardOpenSetQ.push(neighbor);
@@ -932,8 +906,6 @@ Route* Router::router(GCell* source, GCell* target) {
             if (tentativeIsBetter) {
                 neighbor->parent = backwardCurrent;
                 neighbor->gScoreBackward = tentativeGScore;
-                neighbor->hScoreBackward = heuristicCustom(neighbor, source);
-                neighbor->fScoreBackward = neighbor->gScoreBackward + neighbor->hScoreBackward;
                 neighbor->fromDirectionBackward = GCell::FromDirection::RIGHT;
                 backwardOpenSet.insert(neighbor);
                 backwardOpenSetQ.push(neighbor);
@@ -988,8 +960,6 @@ Route* Router::router(GCell* source, GCell* target) {
             if (tentativeIsBetter) {
                 neighbor->parent = backwardCurrent;
                 neighbor->gScoreBackward = tentativeGScore;
-                neighbor->hScoreBackward = heuristicCustom(neighbor, source);
-                neighbor->fScoreBackward = neighbor->gScoreBackward + neighbor->hScoreBackward;
                 neighbor->fromDirectionBackward = GCell::FromDirection::TOP;
                 backwardOpenSet.insert(neighbor);
                 backwardOpenSetQ.push(neighbor);
@@ -1044,8 +1014,6 @@ Route* Router::router(GCell* source, GCell* target) {
             if (tentativeIsBetter) {
                 neighbor->parent = backwardCurrent;
                 neighbor->gScoreBackward = tentativeGScore;
-                neighbor->hScoreBackward = heuristicCustom(neighbor, source);
-                neighbor->fScoreBackward = neighbor->gScoreBackward + neighbor->hScoreBackward;
                 neighbor->fromDirectionBackward = GCell::FromDirection::LEFT;
                 backwardOpenSet.insert(neighbor);
                 backwardOpenSetQ.push(neighbor);
@@ -1100,8 +1068,6 @@ Route* Router::router(GCell* source, GCell* target) {
             if (tentativeIsBetter) {
                 neighbor->parent = backwardCurrent;
                 neighbor->gScoreBackward = tentativeGScore;
-                neighbor->hScoreBackward = heuristicCustom(neighbor, source);
-                neighbor->fScoreBackward = neighbor->gScoreBackward + neighbor->hScoreBackward;
                 neighbor->fromDirectionBackward = GCell::FromDirection::BOTTOM;
                 backwardOpenSet.insert(neighbor);
                 backwardOpenSetQ.push(neighbor);
