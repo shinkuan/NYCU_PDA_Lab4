@@ -63,38 +63,29 @@ public:
     double gammaM1;                     // Gamma * metal 1
     double gammaM2;                     // Gamma * metal 2
     double M1M2ViaCost;                 // Cost of via + (gammaM1 + gammaM2) / 2
-    unsigned int leftEdgeCapacity;      // Capacity of left edge
-    unsigned int bottomEdgeCapacity;    // Capacity of bottom edge
-    unsigned int leftEdgeCount   = 0;   // Count of left edge
-    unsigned int bottomEdgeCount = 0;   // Count of bottom edge
+    unsigned int WSEdgeCapacity;        // West or South edge capacity
+    unsigned int WSEdgeCount = 0;       // West or South edge count
 
-    GCell* left;                        // Pointer to left cell
-    GCell* bottom;                      // Pointer to bottom cell
-    GCell* right;                       // Pointer to right cell
-    GCell* top;                         // Pointer to top cell
+    GCell* westSouth;                   // Pointer to west or south cell
+    GCell* eastNorth;                   // Pointer to east or north cell
+    GCell* dowsUp;                      // Pointer to down or up cell
 
-    std::vector<Route*> routesLeft;     // Routes passed left edge
-    std::vector<Route*> routesBottom;   // Routes passed bottom edge
+    std::vector<Route*> routesWS;       // Routes passed west or south
 
     GCell* parent;         // parent = parent cell
     double gScore;         // gScore = cost of the cheapest path from start to current cell
 
     enum class FromDirection {
         ORIGIN,
-        LEFT,
-        BOTTOM,
-        RIGHT,
-        TOP
+        WEST_SOUTH,
+        EAST_NORTH,
+        DOWN_UP
     };
     FromDirection fromDirection; // fromDirection = from direction of parent cell
 
-    void addRouteLeft(Route* route) {
-        routesLeft.push_back(route);
-        leftEdgeCount++;
-    }
-    void addRouteBottom(Route* route) {
-        routesBottom.push_back(route);
-        bottomEdgeCount++;
+    void addRoute(Route* route) {
+        routesWS.push_back(route);
+        WSEdgeCount++;
     }
 };
 

@@ -59,28 +59,29 @@ public:
     void solve();
 
 private:
-    Point<int> routingAreaLowerLeft;         // Real coordinate of lower left corner of routing area
-    Size<int>  routingAreaSize;              // Size of routing area
-    Size<int>  gcellSize;                    // Size of gcell
-    Chip chip1;                              // Chip 1
-    Chip chip2;                              // Chip 2
-    std::vector<std::vector<GCell*>> gcells; // GCells in routing area [y][x]
+    Point<int> routingAreaLowerLeft;            // Real coordinate of lower left corner of routing area
+    Size<int>  routingAreaSize;                 // Size of routing area
+    Size<int>  gcellSize;                       // Size of gcell
+    Chip chip1;                                 // Chip 1
+    Chip chip2;                                 // Chip 2
+    std::vector<std::vector<GCell*>> gcellsM1;  // GCells in routing area M1 [y][x]
+    std::vector<std::vector<GCell*>> gcellsM2;  // GCells in routing area M2 [y][x]
 
-    double alpha;                            // Alpha (WL cost)
-    double beta;                             // Beta (Overflow cost)
-    double gamma;                            // Gamma (Cell cost)
-    double delta;                            // Delta (Via cost)
-    double viaCost;                          // Via cost
+    double alpha;                               // Alpha (WL cost)
+    double beta;                                // Beta (Overflow cost)
+    double gamma;                               // Gamma (Cell cost)
+    double delta;                               // Delta (Via cost)
+    double viaCost;                             // Via cost
 
-    double maxCellCost;                      // Maximum cell cost
-    double medianCellCost;                   // Median cell cost
+    double maxCellCost;                         // Maximum cell cost
+    double medianCellCost;                      // Median cell cost
 
-    double alphaGcellSizeX;                  // Alpha * gcellSize.x
-    double alphaGcellSizeY;                  // Alpha * gcellSize.y
-    double betaHalfMaxCellCost;              // Beta * 0.5 * maxCellCost
-    double deltaViaCost;                     // Delta * viaCost
+    double alphaGcellSizeX;                     // Alpha * gcellSize.x
+    double alphaGcellSizeY;                     // Alpha * gcellSize.y
+    double betaHalfMaxCellCost;                 // Beta * 0.5 * maxCellCost
+    double deltaViaCost;                        // Delta * viaCost
 
-    std::vector<Route*> routes;              // Routes
+    std::vector<Route*> routes;                 // Routes
 };
 
 

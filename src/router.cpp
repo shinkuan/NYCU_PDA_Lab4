@@ -13,7 +13,12 @@ Router::Router() {
 }
 
 Router::~Router() {
-    for (auto& row : gcells) {
+    for (auto& row : gcellsM1) {
+        for (auto& gcell : row) {
+            delete gcell;
+        }
+    }
+    for (auto& row : gcellsM2) {
         for (auto& gcell : row) {
             delete gcell;
         }
@@ -130,43 +135,66 @@ void Router::loadGridMap(const std::string& filename) {
     }
     file.close();
 
-    gcells.resize(routingAreaSize.y / gcellSize.y);
-    for (auto& row : gcells) {
+    gcellsM1.resize(routingAreaSize.y / gcellSize.y);
+    for (auto& row : gcellsM1) {
         row.resize(routingAreaSize.x / gcellSize.x);
     }
-    for (size_t y = 0; y < gcells.size(); y++) {
-        for (size_t x = 0; x < gcells[y].size(); x++) {
+    for (size_t y = 0; y < gcellsM1.size(); y++) {
+        for (size_t x = 0; x < gcellsM1[y].size(); x++) {
             GCell* gcell = new GCell();
             gcell->parent = nullptr;
             gcell->gScore = DBL_MAX;
             gcell->fromDirection = GCell::FromDirection::ORIGIN;
             gcell->lowerLeft = {static_cast<int>(x) * gcellSize.x + routingAreaLowerLeft.x, static_cast<int>(y) * gcellSize.y + routingAreaLowerLeft.y};
-            gcells[y][x] = gcell;
+            gcellsM1[y][x] = gcell;
         }
     }
-    for (size_t y = 0; y < gcells.size(); y++) {
-        for (size_t x = 0; x < gcells[y].size(); x++) {
-            GCell* gcell = gcells[y][x];
-            if (x > 0) {
-                gcell->left     = gcells[y][x - 1];
-            } else {
-                gcell->left     = nullptr;
-            }
+
+    gcellsM2.resize(routingAreaSize.y / gcellSize.y);
+    for (auto& row : gcellsM2) {
+        row.resize(routingAreaSize.x / gcellSize.x);
+    }
+    for (size_t y = 0; y < gcellsM2.size(); y++) {
+        for (size_t x = 0; x < gcellsM2[y].size(); x++) {
+            GCell* gcell = new GCell();
+            gcell->parent = nullptr;
+            gcell->gScore = DBL_MAX;
+            gcell->fromDirection = GCell::FromDirection::ORIGIN;
+            gcell->lowerLeft = {static_cast<int>(x) * gcellSize.x + routingAreaLowerLeft.x, static_cast<int>(y) * gcellSize.y + routingAreaLowerLeft.y};
+            gcellsM2[y][x] = gcell;
+        }
+    }
+
+    for (size_t y = 0; y < gcellsM1.size(); y++) {
+        for (size_t x = 0; x < gcellsM1[y].size(); x++) {
+            GCell* gcell = gcellsM1[y][x];
             if (y > 0) {
-                gcell->bottom   = gcells[y - 1][x];
+                gcell->westSouth = gcellsM1[y - 1][x];
             } else {
-                gcell->bottom   = nullptr;
+                gcell->westSouth = nullptr;
             }
-            if (x < gcells[y].size() - 1) {
-                gcell->right    = gcells[y][x + 1];
+            if (y < gcellsM1.size() - 1) {
+                gcell->eastNorth = gcellsM1[y + 1][x];
             } else {
-                gcell->right    = nullptr;
+                gcell->eastNorth = nullptr;
             }
-            if (y < gcells.size() - 1) {
-                gcell->top      = gcells[y + 1][x];
+            gcell->dowsUp = gcellsM2[y][x];
+        }
+    }
+    for (size_t y = 0; y < gcellsM2.size(); y++) {
+        for (size_t x = 0; x < gcellsM2[y].size(); x++) {
+            GCell* gcell = gcellsM2[y][x];
+            if (x > 0) {
+                gcell->westSouth = gcellsM2[y][x - 1];
             } else {
-                gcell->top      = nullptr;
+                gcell->westSouth = nullptr;
             }
+            if (x < gcellsM2[y].size() - 1) {
+                gcell->eastNorth = gcellsM2[y][x + 1];
+            } else {
+                gcell->eastNorth = nullptr;
+            }
+            gcell->dowsUp = gcellsM1[y][x];
         }
     }
 
@@ -182,13 +210,13 @@ void Router::loadGridMap(const std::string& filename) {
         int x = (bump.position.x - routingAreaLowerLeft.x) / gcellSize.x;
         int y = (bump.position.y - routingAreaLowerLeft.y) / gcellSize.y;
         LOG_TRACE("Chip 1 bump (" + std::to_string(bump.position.x) + ", " + std::to_string(bump.position.y) + ") -> GCell (" + std::to_string(x) + ", " + std::to_string(y) + ")");
-        bump.gcell = gcells[y][x];
+        bump.gcell = gcellsM1[y][x];
     }
     for (auto& bump : chip2.bumps) {
         int x = (bump.position.x - routingAreaLowerLeft.x) / gcellSize.x;
         int y = (bump.position.y - routingAreaLowerLeft.y) / gcellSize.y;
         LOG_TRACE("Chip 2 bump (" + std::to_string(bump.position.x) + ", " + std::to_string(bump.position.y) + ") -> GCell (" + std::to_string(x) + ", " + std::to_string(y) + ")");
-        bump.gcell = gcells[y][x];
+        bump.gcell = gcellsM1[y][x];
     }
 }
 
@@ -227,9 +255,10 @@ void Router::loadGCells(const std::string& filename) {
             case State::LoadingGCell: {
                 int leftEdgeCapacity, bottomEdgeCapacity;
                 iss >> leftEdgeCapacity >> bottomEdgeCapacity;
-                GCell* gcell = gcells[loadedGCellCount / gcells[0].size()][loadedGCellCount % gcells[0].size()];
-                gcell->leftEdgeCapacity = leftEdgeCapacity;
-                gcell->bottomEdgeCapacity = bottomEdgeCapacity;
+                GCell* gcell = gcellsM1[loadedGCellCount / gcellsM1[0].size()][loadedGCellCount % gcellsM1[0].size()];
+                gcell->WSEdgeCapacity = bottomEdgeCapacity;
+                GCell* gcell = gcellsM2[loadedGCellCount / gcellsM2[0].size()][loadedGCellCount % gcellsM2[0].size()];
+                gcell->WSEdgeCapacity = leftEdgeCapacity;
                 loadedGCellCount++;
                 state = State::LoadingGCell;
                 break;
@@ -255,7 +284,7 @@ void Router::loadCost(const std::string& filename) {
         LoadingLayer
     };
 
-    std::vector<double> costs(gcells.size() * gcells[0].size() * 2);
+    std::vector<double> costs(gcellsM1.size() * gcellsM1[0].size() * 2);
     maxCellCost = DBL_MIN;
     size_t currentRow = 0;
     int currentLayer = 0;
@@ -301,15 +330,15 @@ void Router::loadCost(const std::string& filename) {
             }
             case State::LoadingLayer: {
                 double cost;
-                for (size_t x = 0; x < gcells[currentRow].size(); x++) {
+                for (size_t x = 0; x < gcellsM1[currentRow].size(); x++) {
                     iss >> cost;
                     if (cost != 0) costs.push_back(cost);
                     if (cost > maxCellCost) {
                         maxCellCost = cost;
                     }
                     if (currentLayer == 0) {
-                        gcells[currentRow][x]->costM1 = cost;
-                        gcells[currentRow][x]->gammaM1 = gamma * cost;
+                        gcellsM1[currentRow][x]->costM1 = cost;
+                        gcellsM1[currentRow][x]->gammaM1 = gamma * cost;
                     } else {
                         gcells[currentRow][x]->costM2 = cost;
                         gcells[currentRow][x]->gammaM2 = gamma * cost;
