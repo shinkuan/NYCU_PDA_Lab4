@@ -396,6 +396,8 @@ void Evaluator::loadLG(const std::string& filename) {
                 break;
             }
         }
+        GCell* startGCell = startBump->gcell;
+        net->gcells.push_back(startGCell);
         bool passVia = false;
         bool lastM1 = false;
         while (std::getline(file, line)) {
@@ -430,7 +432,7 @@ void Evaluator::loadLG(const std::string& filename) {
                 }
                 net->WL += std::abs(y2 - y1);
                 net->totalCost += std::abs(y2 - y1) * alpha;
-                net->gcells.push_back(gcells[y1g][x1g]);
+                // net->gcells.push_back(gcells[y1g][x1g]);
                 if (passVia) {
                     net->cellCost += gcells[y1g][x1g]->costM1 / 2;
                     net->totalCost += gcells[y1g][x1g]->gammaM1 / 2;
@@ -473,6 +475,12 @@ void Evaluator::loadLG(const std::string& filename) {
                 int y1g = (y1 - routingAreaLowerLeft.y) / gcellSize.y;
                 int x2g = (x2 - routingAreaLowerLeft.x) / gcellSize.x;
                 int y2g = (y2 - routingAreaLowerLeft.y) / gcellSize.y;
+                if (checkStartPoint) {
+                    if (startBump->position.x != x1 || startBump->position.y != y1) {
+                        LOG_ERROR("[Net: " + std::to_string(netIdx) + "] Start point mismatch: (" + std::to_string(x1) + ", " + std::to_string(y1) + ")");
+                    }
+                    checkStartPoint = false;
+                }
                 if (y2 != y1) {
                     LOG_ERROR("[Net: " + std::to_string(netIdx) + "] M2 vertical routing is forbidden!");
                 }
@@ -487,7 +495,7 @@ void Evaluator::loadLG(const std::string& filename) {
                 }
                 net->WL += std::abs(x2 - x1);
                 net->totalCost += std::abs(x2 - x1) * alpha;
-                net->gcells.push_back(gcells[y1g][x1g]);
+                // net->gcells.push_back(gcells[y1g][x1g]);
                 if (passVia) {
                     net->cellCost += gcells[y1g][x1g]->costM2 / 2;
                     net->totalCost += gcells[y1g][x1g]->gammaM2 / 2;
@@ -582,4 +590,5 @@ void Evaluator::printCosts() {
     vt.addRow("Total", totalNet->WL, totalNet->overflow, totalNet->cellCost, totalNet->viaCount, totalNet->totalCost);
 
     vt.print(std::cout);
+    delete totalNet;
 }

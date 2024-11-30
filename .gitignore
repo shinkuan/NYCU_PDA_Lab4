@@ -1,5 +1,6 @@
 .vscode
 obj
 D2DGRter*
+Evaluator*
 run.log
 test*.py

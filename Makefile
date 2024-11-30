@@ -1,5 +1,5 @@
 # Target name
-TARGET = D2DGRter
+TARGET = Evaluator
 ifeq ($(OS),Windows_NT)
     TARGET := $(TARGET).exe
     RM = del /Q /F
