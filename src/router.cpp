@@ -139,6 +139,10 @@ void Router::loadGridMap(const std::string& filename) {
     for (auto& row : gcellsM1) {
         row.resize(routingAreaSize.x / gcellSize.x);
     }
+    gcellsM2.resize(routingAreaSize.y / gcellSize.y);
+    for (auto& row : gcellsM2) {
+        row.resize(routingAreaSize.x / gcellSize.x);
+    }
     for (size_t y = 0; y < gcellsM1.size(); y++) {
         for (size_t x = 0; x < gcellsM1[y].size(); x++) {
             GCell* gcell = new GCell();
@@ -147,15 +151,6 @@ void Router::loadGridMap(const std::string& filename) {
             gcell->fromDirection = GCell::FromDirection::ORIGIN;
             gcell->lowerLeft = {static_cast<int>(x) * gcellSize.x + routingAreaLowerLeft.x, static_cast<int>(y) * gcellSize.y + routingAreaLowerLeft.y};
             gcellsM1[y][x] = gcell;
-        }
-    }
-
-    gcellsM2.resize(routingAreaSize.y / gcellSize.y);
-    for (auto& row : gcellsM2) {
-        row.resize(routingAreaSize.x / gcellSize.x);
-    }
-    for (size_t y = 0; y < gcellsM2.size(); y++) {
-        for (size_t x = 0; x < gcellsM2[y].size(); x++) {
             GCell* gcell = new GCell();
             gcell->parent = nullptr;
             gcell->gScore = DBL_MAX;
@@ -339,13 +334,17 @@ void Router::loadCost(const std::string& filename) {
                     if (currentLayer == 0) {
                         gcellsM1[currentRow][x]->costM1 = cost;
                         gcellsM1[currentRow][x]->gammaM1 = gamma * cost;
+                        gcellsM2[currentRow][x]->costM1 = cost;
+                        gcellsM2[currentRow][x]->gammaM1 = gamma * cost;
                     } else {
-                        gcells[currentRow][x]->costM2 = cost;
-                        gcells[currentRow][x]->gammaM2 = gamma * cost;
+                        gcellsM1[currentRow][x]->costM2 = cost;
+                        gcellsM1[currentRow][x]->gammaM2 = gamma * cost;
+                        gcellsM2[currentRow][x]->costM2 = cost;
+                        gcellsM2[currentRow][x]->gammaM2 = gamma * cost;
                     }
                 }
                 currentRow++;
-                if (currentRow == gcells.size()) {
+                if (currentRow == gcellsM1.size()) {
                     currentRow = 0;
                     currentLayer++;
                     state = State::LoadingCommand;
@@ -368,7 +367,12 @@ void Router::loadCost(const std::string& filename) {
     alphaGcellSizeY = alpha * gcellSize.y;
     betaHalfMaxCellCost = beta * 0.5 * maxCellCost;
     deltaViaCost = delta * viaCost;
-    for (auto& row : gcells) {
+    for (auto& row : gcellsM1) {
+        for (auto& gcell : row) {
+            gcell->M1M2ViaCost = deltaViaCost + (gcell->gammaM1 + gcell->gammaM2) / 2;
+        }
+    }
+    for (auto& row : gcellsM2) {
         for (auto& gcell : row) {
             gcell->M1M2ViaCost = deltaViaCost + (gcell->gammaM1 + gcell->gammaM2) / 2;
         }
@@ -477,24 +481,19 @@ Route* Router::router(GCell* source, GCell* target) {
                         LOG_ERROR("Invalid from direction");
                         return nullptr;
                     }
-                    case GCell::FromDirection::LEFT: {
-                        next = current->left;
-                        current->addRouteLeft(route);
+                    case GCell::FromDirection::WEST_SOUTH: {
+                        next = current->westSouth;
+                        current->addRoute(route);
                         break;
                     }
-                    case GCell::FromDirection::BOTTOM: {
-                        next = current->bottom;
-                        current->addRouteBottom(route);
+                    case GCell::FromDirection::EAST_NORTH: {
+                        next = current->eastNorth;
+                        current->addRoute(route);
                         break;
                     }
-                    case GCell::FromDirection::RIGHT: {
-                        next = current->right;
-                        next->addRouteLeft(route);
-                        break;
-                    }
-                    case GCell::FromDirection::TOP: {
-                        next = current->top;
-                        next->addRouteBottom(route);
+                    case GCell::FromDirection::DOWN_UP: {
+                        next = current->dowsUp;
+                        current->addRoute(route);
                         break;
                     }
                     default: {
