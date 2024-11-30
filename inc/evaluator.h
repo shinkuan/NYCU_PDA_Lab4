@@ -45,6 +45,16 @@
 #include "chip.h"
 
 
+struct Net {
+    int idx;                            // Index of net
+    int WL;                             // Wirelength
+    int overflow;                       // Overflow
+    double cellCost;                    // Cell cost
+    int viaCount;                       // Via count
+    double totalCost;                   // Total cost
+    std::vector<GCell*> gcells;         // GCells in net
+};
+
 class Evaluator {
 public:
     Evaluator();
@@ -53,10 +63,8 @@ public:
     void loadGridMap(const std::string& filename);
     void loadGCells(const std::string& filename);
     void loadCost(const std::string& filename);
-    void dumpRoutes(const std::string& filename);
-    Route* router(GCell* source, GCell* target);
-
-    void solve();
+    void loadLG(const std::string& filename);
+    void printCosts();
 
 private:
     Point<int> routingAreaLowerLeft;         // Real coordinate of lower left corner of routing area
@@ -80,10 +88,7 @@ private:
     double betaHalfMaxCellCost;              // Beta * 0.5 * maxCellCost
     double deltaViaCost;                     // Delta * viaCost
 
-    std::vector<Route*> routes;              // Routes
-
-    double heuristicManhattan(GCell* a, GCell* b);
-    double heuristicCustom(GCell* a, GCell* b);
+    std::vector<Net*> nets;                   // Nets
 };
 
 
