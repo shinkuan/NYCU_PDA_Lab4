@@ -399,7 +399,7 @@ void Evaluator::loadLG(const std::string& filename) {
         GCell* startGCell = startBump->gcell;
         net->gcells.push_back(startGCell);
         bool passVia = false;
-        bool lastM1 = false;
+        bool lastM1 = true;
         while (std::getline(file, line)) {
             if (is_blank(line)) continue;
             std::istringstream iss(line);
@@ -434,8 +434,7 @@ void Evaluator::loadLG(const std::string& filename) {
                 net->totalCost += std::abs(y2 - y1) * alpha;
                 // net->gcells.push_back(gcells[y1g][x1g]);
                 if (passVia) {
-                    net->cellCost += gcells[y1g][x1g]->costM1 / 2;
-                    net->totalCost += gcells[y1g][x1g]->gammaM1 / 2;
+                    
                 } else {
                     net->cellCost += gcells[y1g][x1g]->costM1;
                     net->totalCost += gcells[y1g][x1g]->gammaM1;
@@ -497,8 +496,7 @@ void Evaluator::loadLG(const std::string& filename) {
                 net->totalCost += std::abs(x2 - x1) * alpha;
                 // net->gcells.push_back(gcells[y1g][x1g]);
                 if (passVia) {
-                    net->cellCost += gcells[y1g][x1g]->costM2 / 2;
-                    net->totalCost += gcells[y1g][x1g]->gammaM2 / 2;
+                    
                 } else {
                     net->cellCost += gcells[y1g][x1g]->costM2;
                     net->totalCost += gcells[y1g][x1g]->gammaM2;
@@ -534,15 +532,27 @@ void Evaluator::loadLG(const std::string& filename) {
             } else if (command == "via") {
                 GCell* latestGCell = net->gcells.back();
                 if (lastM1) {
-                    net->cellCost -= latestGCell->costM1;
-                    net->totalCost -= latestGCell->gammaM1;
+                    if (checkStartPoint) {
+
+                    } else {
+                        net->cellCost -= latestGCell->costM1;
+                        net->totalCost -= latestGCell->gammaM1;
+                    }
                     net->cellCost += latestGCell->costM1 / 2;
                     net->totalCost += latestGCell->gammaM1 / 2;
-                } else {
-                    net->cellCost -= latestGCell->costM2;
-                    net->totalCost -= latestGCell->gammaM2;
                     net->cellCost += latestGCell->costM2 / 2;
                     net->totalCost += latestGCell->gammaM2 / 2;
+                } else {
+                    if (checkStartPoint) {
+
+                    } else {
+                        net->cellCost -= latestGCell->costM2;
+                        net->totalCost -= latestGCell->gammaM2;
+                    }
+                    net->cellCost += latestGCell->costM2 / 2;
+                    net->totalCost += latestGCell->gammaM2 / 2;
+                    net->cellCost += latestGCell->costM1 / 2;
+                    net->totalCost += latestGCell->gammaM1 / 2;
                 }
                 net->viaCount++;
                 net->totalCost += deltaViaCost;
@@ -556,12 +566,6 @@ void Evaluator::loadLG(const std::string& filename) {
                     if (lastM1) {
                         LOG_ERROR("[Net: " + std::to_string(netIdx) + "] Last routing is not M1!");
                     }
-                    net->cellCost -= latestGCell->costM2;
-                    net->totalCost -= latestGCell->gammaM2;
-                    net->cellCost += latestGCell->costM2 / 2;
-                    net->totalCost += latestGCell->gammaM2 / 2;
-                    net->cellCost += latestGCell->costM1 / 2;
-                    net->totalCost += latestGCell->gammaM1 / 2;
                 } else {
                     if (!lastM1) {
                         LOG_ERROR("[Net: " + std::to_string(netIdx) + "] Last routing is not M1!");
