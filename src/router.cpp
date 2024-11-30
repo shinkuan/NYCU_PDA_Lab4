@@ -460,7 +460,8 @@ Route* Router::router(GCell* source, GCell* target) {
                 GCell* next;
                 switch (forwardCurrent->fromDirectionForward) {
                     case GCell::FromDirection::ORIGIN: {
-                        break;
+                        LOG_ERROR("Forward current cell cannot be origin");
+                        return nullptr;
                     }
                     case GCell::FromDirection::LEFT: {
                         forwardCurrent->addRouteLeft(route);
@@ -501,7 +502,8 @@ Route* Router::router(GCell* source, GCell* target) {
                 GCell* next;
                 switch (meetingPoint->fromDirectionBackward) {
                     case GCell::FromDirection::ORIGIN: {
-                        break;
+                        LOG_ERROR("Backward current cell cannot be origin");
+                        return nullptr;
                     }
                     case GCell::FromDirection::LEFT: {
                         meetingPoint->addRouteLeft(route);
@@ -544,8 +546,7 @@ Route* Router::router(GCell* source, GCell* target) {
 
         LOG_TRACE("Forward Current cell: (" + std::to_string(forwardCurrent->lowerLeft.x) + ", " + std::to_string(forwardCurrent->lowerLeft.y) + ")");
         if (
-            forwardCurrent->left != nullptr && forwardClosedSet.find(forwardCurrent->left) == forwardClosedSet.end() &&
-            forwardCurrent->fromDirectionForward != GCell::FromDirection::LEFT
+            forwardCurrent->left != nullptr && forwardClosedSet.find(forwardCurrent->left) == forwardClosedSet.end()
         ) {
             GCell* neighbor = forwardCurrent->left;
             double tentativeGScore;
@@ -598,8 +599,7 @@ Route* Router::router(GCell* source, GCell* target) {
         }
 
         if (
-            forwardCurrent->bottom != nullptr && forwardClosedSet.find(forwardCurrent->bottom) == forwardClosedSet.end() &&
-            forwardCurrent->fromDirectionForward != GCell::FromDirection::BOTTOM
+            forwardCurrent->bottom != nullptr && forwardClosedSet.find(forwardCurrent->bottom) == forwardClosedSet.end()
         ) {
             GCell* neighbor = forwardCurrent->bottom;
             double tentativeGScore;
@@ -652,8 +652,7 @@ Route* Router::router(GCell* source, GCell* target) {
         }
 
         if (
-            forwardCurrent->right != nullptr && forwardClosedSet.find(forwardCurrent->right) == forwardClosedSet.end() &&
-            forwardCurrent->fromDirectionForward != GCell::FromDirection::RIGHT
+            forwardCurrent->right != nullptr && forwardClosedSet.find(forwardCurrent->right) == forwardClosedSet.end()
         ) {
             GCell* neighbor = forwardCurrent->right;
             double tentativeGScore;
@@ -706,8 +705,7 @@ Route* Router::router(GCell* source, GCell* target) {
         }
 
         if (
-            forwardCurrent->top != nullptr && forwardClosedSet.find(forwardCurrent->top) == forwardClosedSet.end() &&
-            forwardCurrent->fromDirectionForward != GCell::FromDirection::TOP
+            forwardCurrent->top != nullptr && forwardClosedSet.find(forwardCurrent->top) == forwardClosedSet.end()
         ) {
             GCell* neighbor = forwardCurrent->top;
             double tentativeGScore;
@@ -777,7 +775,8 @@ Route* Router::router(GCell* source, GCell* target) {
                 GCell* next;
                 switch (meetingPoint->fromDirectionForward) {
                     case GCell::FromDirection::ORIGIN: {
-                        break;
+                        LOG_ERROR("Forward current cell cannot be origin");
+                        return nullptr;
                     }
                     case GCell::FromDirection::LEFT: {
                         meetingPoint->addRouteLeft(route);
@@ -818,7 +817,8 @@ Route* Router::router(GCell* source, GCell* target) {
                 GCell* next;
                 switch (backwardCurrent->fromDirectionBackward) {
                     case GCell::FromDirection::ORIGIN: {
-                        break;
+                        LOG_ERROR("Backward current cell cannot be origin");
+                        return nullptr;
                     }
                     case GCell::FromDirection::LEFT: {
                         backwardCurrent->addRouteLeft(route);
@@ -832,10 +832,12 @@ Route* Router::router(GCell* source, GCell* target) {
                     }
                     case GCell::FromDirection::RIGHT: {
                         next = backwardCurrent->right;
+                        next->addRouteLeft(route);
                         break;
                     }
                     case GCell::FromDirection::TOP: {
                         next = backwardCurrent->top;
+                        next->addRouteBottom(route);
                         break;
                     }
                     default: {
@@ -859,8 +861,7 @@ Route* Router::router(GCell* source, GCell* target) {
 
         LOG_TRACE("Backward Current cell: (" + std::to_string(backwardCurrent->lowerLeft.x) + ", " + std::to_string(backwardCurrent->lowerLeft.y) + ")");
         if (
-            backwardCurrent->left != nullptr && backwardClosedSet.find(backwardCurrent->left) == backwardClosedSet.end() &&
-            backwardCurrent->fromDirectionBackward != GCell::FromDirection::LEFT
+            backwardCurrent->left != nullptr && backwardClosedSet.find(backwardCurrent->left) == backwardClosedSet.end()
         ) {
             GCell* neighbor = backwardCurrent->left;
             double tentativeGScore;
@@ -913,8 +914,7 @@ Route* Router::router(GCell* source, GCell* target) {
         }
 
         if (
-            backwardCurrent->bottom != nullptr && backwardClosedSet.find(backwardCurrent->bottom) == backwardClosedSet.end() &&
-            backwardCurrent->fromDirectionBackward != GCell::FromDirection::BOTTOM
+            backwardCurrent->bottom != nullptr && backwardClosedSet.find(backwardCurrent->bottom) == backwardClosedSet.end()
         ) {
             GCell* neighbor = backwardCurrent->bottom;
             double tentativeGScore;
@@ -967,8 +967,7 @@ Route* Router::router(GCell* source, GCell* target) {
         }
 
         if (
-            backwardCurrent->right != nullptr && backwardClosedSet.find(backwardCurrent->right) == backwardClosedSet.end() &&
-            backwardCurrent->fromDirectionBackward != GCell::FromDirection::RIGHT
+            backwardCurrent->right != nullptr && backwardClosedSet.find(backwardCurrent->right) == backwardClosedSet.end()
         ) {
             GCell* neighbor = backwardCurrent->right;
             double tentativeGScore;
@@ -1021,8 +1020,7 @@ Route* Router::router(GCell* source, GCell* target) {
         }
 
         if (
-            backwardCurrent->top != nullptr && backwardClosedSet.find(backwardCurrent->top) == backwardClosedSet.end() &&
-            backwardCurrent->fromDirectionBackward != GCell::FromDirection::TOP
+            backwardCurrent->top != nullptr && backwardClosedSet.find(backwardCurrent->top) == backwardClosedSet.end()
         ) {
             GCell* neighbor = backwardCurrent->top;
             double tentativeGScore;
@@ -1083,12 +1081,12 @@ void Router::solve() {
     LOG_INFO("Running router");
 
     for (size_t bump_idx = 0; bump_idx < chip1.bumps.size(); bump_idx++) {
-        LOG_INFO("Routing bump " + std::to_string(bump_idx));
         Bump& bump1 = chip1.bumps[bump_idx];
         Bump& bump2 = chip2.bumps[bump_idx];
         if (bump1.idx != bump2.idx) {
             LOG_ERROR("Bump index mismatch");
         }
+        LOG_INFO("Routing bump " + std::to_string(bump1.idx));
         Route* route = router(bump1.gcell, bump2.gcell);
         route->idx = bump1.idx;
         if (route == nullptr) {
