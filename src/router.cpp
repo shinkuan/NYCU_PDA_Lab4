@@ -151,7 +151,7 @@ void Router::loadGridMap(const std::string& filename) {
             gcell->fromDirection = GCell::FromDirection::ORIGIN;
             gcell->lowerLeft = {static_cast<int>(x) * gcellSize.x + routingAreaLowerLeft.x, static_cast<int>(y) * gcellSize.y + routingAreaLowerLeft.y};
             gcellsM1[y][x] = gcell;
-            GCell* gcell = new GCell();
+                   gcell = new GCell();
             gcell->parent = nullptr;
             gcell->gScore = DBL_MAX;
             gcell->fromDirection = GCell::FromDirection::ORIGIN;
@@ -252,7 +252,7 @@ void Router::loadGCells(const std::string& filename) {
                 iss >> leftEdgeCapacity >> bottomEdgeCapacity;
                 GCell* gcell = gcellsM1[loadedGCellCount / gcellsM1[0].size()][loadedGCellCount % gcellsM1[0].size()];
                 gcell->WSEdgeCapacity = bottomEdgeCapacity;
-                GCell* gcell = gcellsM2[loadedGCellCount / gcellsM2[0].size()][loadedGCellCount % gcellsM2[0].size()];
+                       gcell = gcellsM2[loadedGCellCount / gcellsM2[0].size()][loadedGCellCount % gcellsM2[0].size()];
                 gcell->WSEdgeCapacity = leftEdgeCapacity;
                 loadedGCellCount++;
                 state = State::LoadingGCell;
@@ -332,15 +332,11 @@ void Router::loadCost(const std::string& filename) {
                         maxCellCost = cost;
                     }
                     if (currentLayer == 0) {
-                        gcellsM1[currentRow][x]->costM1 = cost;
-                        gcellsM1[currentRow][x]->gammaM1 = gamma * cost;
-                        gcellsM2[currentRow][x]->costM1 = cost;
-                        gcellsM2[currentRow][x]->gammaM1 = gamma * cost;
+                        gcellsM1[currentRow][x]->cost = cost;
+                        gcellsM1[currentRow][x]->gammaCost = gamma * cost;
                     } else {
-                        gcellsM1[currentRow][x]->costM2 = cost;
-                        gcellsM1[currentRow][x]->gammaM2 = gamma * cost;
-                        gcellsM2[currentRow][x]->costM2 = cost;
-                        gcellsM2[currentRow][x]->gammaM2 = gamma * cost;
+                        gcellsM2[currentRow][x]->cost = cost;
+                        gcellsM2[currentRow][x]->gammaCost = gamma * cost;
                     }
                 }
                 currentRow++;
@@ -367,14 +363,35 @@ void Router::loadCost(const std::string& filename) {
     alphaGcellSizeY = alpha * gcellSize.y;
     betaHalfMaxCellCost = beta * 0.5 * maxCellCost;
     deltaViaCost = delta * viaCost;
-    for (auto& row : gcellsM1) {
-        for (auto& gcell : row) {
-            gcell->M1M2ViaCost = deltaViaCost + (gcell->gammaM1 + gcell->gammaM2) / 2;
-        }
-    }
-    for (auto& row : gcellsM2) {
-        for (auto& gcell : row) {
-            gcell->M1M2ViaCost = deltaViaCost + (gcell->gammaM1 + gcell->gammaM2) / 2;
+    for (size_t y = 0; y < gcellsM1.size(); y++) {
+        for (size_t x = 0; x < gcellsM1[y].size(); x++) {
+            double M1M2ViaCost = deltaViaCost + (gcellsM1[y][x]->gammaCost + gcellsM2[y][x]->gammaCost) / 2;
+            if (x > 0) {
+                gcellsM2[y][x]->costWS = gcellsM2[y][x - 1]->gammaCost + alphaGcellSizeX;
+            } else {
+                gcellsM2[y][x]->costWS = DBL_MAX;
+            }
+            if (x < gcellsM2[y].size() - 1) {
+                gcellsM2[y][x]->costEN = gcellsM2[y][x + 1]->gammaCost + alphaGcellSizeX;
+            } else {
+                gcellsM2[y][x]->costEN = DBL_MAX;
+            }
+            if (y > 0) {
+                gcellsM1[y][x]->costWS = gcellsM1[y - 1][x]->gammaCost + alphaGcellSizeY;
+            } else {
+                gcellsM1[y][x]->costWS = DBL_MAX;
+            }
+            if (y < gcellsM1.size() - 1) {
+                gcellsM1[y][x]->costEN = gcellsM1[y + 1][x]->gammaCost + alphaGcellSizeY;
+            } else {
+                gcellsM1[y][x]->costEN = DBL_MAX;
+            }
+            double M1DUCost = M1M2ViaCost - gcellsM1[y][x]->gammaCost;
+            double M2DUCost = M1M2ViaCost - gcellsM2[y][x]->gammaCost;
+            if (M1DUCost < 0) LOG_WARNING("M1 Cell [y: " + std::to_string(y) + ", x: " + std::to_string(x) + "] Up cost is negative");
+            if (M2DUCost < 0) LOG_WARNING("M2 Cell [y: " + std::to_string(y) + ", x: " + std::to_string(x) + "] Down cost is negative");
+            gcellsM1[y][x]->costDU = M1DUCost;
+            gcellsM2[y][x]->costDU = M2DUCost;
         }
     }
 }
@@ -397,46 +414,26 @@ void Router::dumpRoutes(const std::string& filename) {
         for (size_t i = 1; i < route->route.size(); i++) {
             Point<int> currPoint = route->route[i]->lowerLeft;
             Point<int> diff = {currPoint.x - lastPoint.x, currPoint.y - lastPoint.y};
-            if (diff.x != 0) {
-                if (diff.y != 0) {
-                    LOG_ERROR("Invalid route, cannot change both x and y");
-                    return;
-                }
+            if (diff.x == 0 && diff.y == 0) {
                 if (currentMetal == Metal::M1) {
                     // From Vertical to Horizontal
                     if (fromPoint.y != lastPoint.y) // Start Point correction
                         file << "M1 " << fromPoint.x << " " << fromPoint.y << " " << lastPoint.x << " " << lastPoint.y << std::endl;
                     file << "via" << std::endl; // Via
                     currentMetal = Metal::M2;
-                    fromPoint = lastPoint;
-                } else {
-                    // From Horizontal to Horizontal
-                }
-            } else if (diff.y != 0) {
-                if (diff.x != 0) {
-                    LOG_ERROR("Invalid route, cannot change both x and y");
-                    return;
-                }
-                if (currentMetal == Metal::M1) {
-                    // From Vertical to Vertical
+                    fromPoint = currPoint;
                 } else {
                     // From Horizontal to Vertical
                     file << "M2 " << fromPoint.x << " " << fromPoint.y << " " << lastPoint.x << " " << lastPoint.y << std::endl;
                     file << "via" << std::endl; // Via
                     currentMetal = Metal::M1;
-                    fromPoint = lastPoint;
+                    fromPoint = currPoint;
                 }
-            } else {
-                LOG_ERROR("Invalid route, no change in x and y");
-                return;
             }
             lastPoint = currPoint;
         }
-        if (currentMetal == Metal::M1) {
+        if (currentMetal == Metal::M1 && fromPoint.y != lastPoint.y) {
             file << "M1 " << fromPoint.x << " " << fromPoint.y << " " << lastPoint.x << " " << lastPoint.y << std::endl;
-        } else {
-            file << "M2 " << fromPoint.x << " " << fromPoint.y << " " << lastPoint.x << " " << lastPoint.y << std::endl;
-            file << "via" << std::endl;
         }
         file << ".end" << std::endl;
     }
@@ -455,7 +452,7 @@ Route* Router::router(GCell* source, GCell* target) {
     std::unordered_set<GCell*> openSet;
     std::priority_queue<GCell*, std::vector<GCell*>, decltype(cmp)> openSetQ(cmp);
 
-    source->gScore = source->gammaM1;
+    source->gScore = source->gammaCost;
     source->fromDirection = GCell::FromDirection::ORIGIN;
     openSet.insert(source);
     openSetQ.push(source);
@@ -517,54 +514,16 @@ Route* Router::router(GCell* source, GCell* target) {
 
         LOG_TRACE("Current cell: (" + std::to_string(current->lowerLeft.x) + ", " + std::to_string(current->lowerLeft.y) + ")");
         if (
-            current->left != nullptr && closedSet.find(current->left) == closedSet.end()
+            current->fromDirection != GCell::FromDirection::WEST_SOUTH 
+            && current->westSouth != nullptr 
+            && closedSet.find(current->westSouth) == closedSet.end()
         ) {
-            GCell* neighbor = current->left;
+            // Going to west or south
+            GCell* neighbor = current->westSouth;
             double tentativeGScore;
-            // We are going left, so we are using M2 (Horizontal)
-            switch (current->fromDirection) {
-                // M1 -> M2
-                case GCell::FromDirection::ORIGIN:
-                case GCell::FromDirection::BOTTOM:
-                case GCell::FromDirection::TOP: {
-                    if (neighbor == target) {
-                        tentativeGScore = current->gScore
-                                        + alphaGcellSizeX
-                                        + neighbor->M1M2ViaCost
-                                        - current->gammaM1
-                                        + current->M1M2ViaCost;
-                    } else {
-                        tentativeGScore = current->gScore
-                                        + alphaGcellSizeX
-                                        + neighbor->gammaM2
-                                        - current->gammaM1
-                                        + current->M1M2ViaCost;
-                    }
-                    if (current->leftEdgeCount >= current->leftEdgeCapacity) {
-                        tentativeGScore += betaHalfMaxCellCost;
-                    }
-                    break;
-                }
-                // M2 -> M2
-                case GCell::FromDirection::RIGHT: {
-                    if (neighbor == target) {
-                        tentativeGScore = current->gScore
-                                        + alphaGcellSizeX
-                                        + neighbor->M1M2ViaCost;
-                    } else {
-                        tentativeGScore = current->gScore
-                                        + alphaGcellSizeX
-                                        + neighbor->gammaM2;
-                    }
-                    if (current->leftEdgeCount >= current->leftEdgeCapacity) {
-                        tentativeGScore += betaHalfMaxCellCost;
-                    }
-                    break;
-                }
-                default: {
-                    LOG_ERROR("Unknown from direction");
-                    return nullptr;
-                }
+            tentativeGScore = current->gScore + current->costWS;
+            if (current->WSEdgeCount >= current->WSEdgeCapacity) {
+                tentativeGScore += betaHalfMaxCellCost;
             }
 
             bool tentativeIsBetter = false;
@@ -577,47 +536,23 @@ Route* Router::router(GCell* source, GCell* target) {
             if (tentativeIsBetter) {
                 neighbor->parent = current;
                 neighbor->gScore = tentativeGScore;
-                neighbor->fromDirection = GCell::FromDirection::RIGHT;
+                neighbor->fromDirection = GCell::FromDirection::EAST_NORTH;
                 openSet.insert(neighbor);
                 openSetQ.push(neighbor);
             }    
         }
 
         if (
-            current->bottom != nullptr && closedSet.find(current->bottom) == closedSet.end()
+            current->fromDirection != GCell::FromDirection::EAST_NORTH 
+            && current->eastNorth != nullptr 
+            && closedSet.find(current->eastNorth) == closedSet.end()
         ) {
-            GCell* neighbor = current->bottom;
+            // Going to east or north
+            GCell* neighbor = current->eastNorth;
             double tentativeGScore;
-            // We are going bottom, so we are using M1 (Vertical)
-            switch (current->fromDirection) {
-                // M1 -> M1
-                case GCell::FromDirection::ORIGIN:
-                case GCell::FromDirection::TOP: {
-                    tentativeGScore = current->gScore
-                                    + alphaGcellSizeY
-                                    + neighbor->gammaM1;
-                    if (current->bottomEdgeCount >= current->bottomEdgeCapacity) {
-                        tentativeGScore += betaHalfMaxCellCost;
-                    }
-                    break;
-                }
-                // M2 -> M1
-                case GCell::FromDirection::LEFT:
-                case GCell::FromDirection::RIGHT: {
-                    tentativeGScore = current->gScore
-                                    + alphaGcellSizeY
-                                    + neighbor->gammaM1
-                                    - current->gammaM2
-                                    + current->M1M2ViaCost;
-                    if (current->bottomEdgeCount >= current->bottomEdgeCapacity) {
-                        tentativeGScore += betaHalfMaxCellCost;
-                    }
-                    break;
-                }
-                default: {
-                    LOG_ERROR("Unknown from direction");
-                    return nullptr;
-                }
+            tentativeGScore = current->gScore + current->costEN;
+            if (neighbor->WSEdgeCount >= neighbor->WSEdgeCapacity) {
+                tentativeGScore += betaHalfMaxCellCost;
             }
 
             bool tentativeIsBetter = false;
@@ -630,62 +565,20 @@ Route* Router::router(GCell* source, GCell* target) {
             if (tentativeIsBetter) {
                 neighbor->parent = current;
                 neighbor->gScore = tentativeGScore;
-                neighbor->fromDirection = GCell::FromDirection::TOP;
+                neighbor->fromDirection = GCell::FromDirection::WEST_SOUTH;
                 openSet.insert(neighbor);
                 openSetQ.push(neighbor);
             }
         }
 
         if (
-            current->right != nullptr && closedSet.find(current->right) == closedSet.end()
+            current->fromDirection != GCell::FromDirection::DOWN_UP
+            && current->dowsUp != nullptr
+            && closedSet.find(current->dowsUp) == closedSet.end()
         ) {
-            GCell* neighbor = current->right;
+            GCell* neighbor = current->dowsUp;
             double tentativeGScore;
-            // We are going right, so we are using M2 (Horizontal)
-            switch (current->fromDirection) {
-                // M1 -> M2
-                case GCell::FromDirection::ORIGIN:
-                case GCell::FromDirection::BOTTOM:
-                case GCell::FromDirection::TOP: {
-                    if (neighbor == target) {
-                        tentativeGScore = current->gScore
-                                        + alphaGcellSizeX
-                                        + neighbor->M1M2ViaCost
-                                        - current->gammaM1
-                                        + current->M1M2ViaCost;
-                    } else {
-                        tentativeGScore = current->gScore
-                                        + alphaGcellSizeX
-                                        + neighbor->gammaM2
-                                        - current->gammaM1
-                                        + current->M1M2ViaCost;
-                    }
-                    if (neighbor->leftEdgeCount >= neighbor->leftEdgeCapacity) {
-                        tentativeGScore += betaHalfMaxCellCost;
-                    }
-                    break;
-                }
-                // M2 -> M2
-                case GCell::FromDirection::LEFT: {
-                    if (neighbor == target) {
-                        tentativeGScore = current->gScore
-                                        + alphaGcellSizeX
-                                        + neighbor->M1M2ViaCost;
-                    } else {
-                        tentativeGScore = current->gScore
-                                        + alphaGcellSizeX
-                                        + neighbor->gammaM2;
-                    }
-                    if (neighbor->leftEdgeCount >= neighbor->leftEdgeCapacity) {
-                        tentativeGScore += betaHalfMaxCellCost;
-                    }
-                    break;
-                }
-                default: {
-                    LOG_ERROR("Unknown from direction");
-                    return nullptr;
-                }
-            }
+            tentativeGScore = current->gScore + current->costDU;
 
             bool tentativeIsBetter = false;
             if (openSet.find(neighbor) == openSet.end()) {
@@ -697,60 +590,7 @@ Route* Router::router(GCell* source, GCell* target) {
             if (tentativeIsBetter) {
                 neighbor->parent = current;
                 neighbor->gScore = tentativeGScore;
-                neighbor->fromDirection = GCell::FromDirection::LEFT;
-                openSet.insert(neighbor);
-                openSetQ.push(neighbor);
-            }
-        }
-
-        if (
-            current->top != nullptr && closedSet.find(current->top) == closedSet.end()
-        ) {
-            GCell* neighbor = current->top;
-            double tentativeGScore;
-            // We are going top, so we are using M1 (Vertical)
-            switch (current->fromDirection) {
-                // M1 -> M1
-                case GCell::FromDirection::ORIGIN:
-                case GCell::FromDirection::BOTTOM: {
-                    tentativeGScore = current->gScore
-                                    + alphaGcellSizeY
-                                    + neighbor->gammaM1;
-                    if (neighbor->bottomEdgeCount >= neighbor->bottomEdgeCapacity) {
-                        tentativeGScore += betaHalfMaxCellCost;
-                    }
-                    break;
-                }
-                // M2 -> M1
-                case GCell::FromDirection::LEFT:
-                case GCell::FromDirection::RIGHT: {
-                    tentativeGScore = current->gScore
-                                    + alphaGcellSizeY
-                                    + neighbor->gammaM1
-                                    - current->gammaM2
-                                    + current->M1M2ViaCost;
-                    if (neighbor->bottomEdgeCount >= neighbor->bottomEdgeCapacity) {
-                        tentativeGScore += betaHalfMaxCellCost;
-                    }
-                    break;
-                }
-                default: {
-                    LOG_ERROR("Unknown from direction");
-                    return nullptr;
-                }
-            }
-
-            bool tentativeIsBetter = false;
-            if (openSet.find(neighbor) == openSet.end()) {
-                tentativeIsBetter = true;
-            } else if (tentativeGScore < neighbor->gScore) {
-                tentativeIsBetter = true;
-            }
-
-            if (tentativeIsBetter) {
-                neighbor->parent = current;
-                neighbor->gScore = tentativeGScore;
-                neighbor->fromDirection = GCell::FromDirection::BOTTOM;
+                neighbor->fromDirection = GCell::FromDirection::DOWN_UP;
                 openSet.insert(neighbor);
                 openSetQ.push(neighbor);
             }

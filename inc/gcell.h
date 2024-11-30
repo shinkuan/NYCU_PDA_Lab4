@@ -58,17 +58,17 @@ public:
     ~GCell() {};
 
     Point<int> lowerLeft;               // Real coordinate of lower left corner
-    double costM1;                      // Cost of the cell in metal 1
-    double costM2;                      // Cost of the cell in metal 2
-    double gammaM1;                     // Gamma * metal 1
-    double gammaM2;                     // Gamma * metal 2
-    double M1M2ViaCost;                 // Cost of via + (gammaM1 + gammaM2) / 2
+    double cost;                        // Cost of the cell
+    double gammaCost;                     // Gamma * metal 1
     unsigned int WSEdgeCapacity;        // West or South edge capacity
     unsigned int WSEdgeCount = 0;       // West or South edge count
 
     GCell* westSouth;                   // Pointer to west or south cell
     GCell* eastNorth;                   // Pointer to east or north cell
     GCell* dowsUp;                      // Pointer to down or up cell
+    double costWS;                      // Cost of going west or south
+    double costEN;                      // Cost of going east or north
+    double costDU;                      // Cost of going down or up
 
     std::vector<Route*> routesWS;       // Routes passed west or south
 
