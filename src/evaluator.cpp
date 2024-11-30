@@ -347,3 +347,221 @@ void Evaluator::loadCost(const std::string& filename) {
         }
     }
 }
+
+void Evaluator::loadLG(const std::string& filename) {
+    // Load LG
+    LOG_INFO("Loading LG from " + filename);
+
+    std::ifstream file(filename);
+    if (!file.is_open()) {
+        LOG_ERROR("Cannot open file " + filename);
+        return;
+    }
+
+    enum class State {
+        LoadingNet,
+        LoadingRoute
+    };
+
+    State state = State::LoadingNet;
+    std::string line;
+    while (std::getline(file, line)) {
+        if (is_blank(line)) continue;
+        std::istringstream iss(line);
+        std::string netIdxStr;
+        iss >> netIdxStr;
+        int netIdx = std::stoi(netIdxStr.substr(1));
+        Net* net = new Net();
+        net->idx = netIdx;
+        net->WL = 0;
+        net->overflow = 0;
+        net->cellCost = 0;
+        net->viaCount = 0;
+        net->totalCost = 0;
+        net->gcells.clear();
+        nets.push_back(net);
+        bool checkStartPoint = true;
+        Bump* startBump = nullptr;
+        Bump* endBump = nullptr;
+        for (auto& bump : chip1.bumps) {
+            if (bump.idx == netIdx) {
+                startBump = &bump;
+                break;
+            }
+        }
+        for (auto& bump : chip2.bumps) {
+            if (bump.idx == netIdx) {
+                endBump = &bump;
+                break;
+            }
+        }
+        bool passVia = false;
+        bool lastM1 = false;
+        while (std::getline(file, line)) {
+            if (is_blank(line)) continue;
+            std::istringstream iss(line);
+            std::string command;
+            iss >> command;
+            if (command == "M1") {
+                int x1, y1, x2, y2;
+                iss >> x1 >> y1 >> x2 >> y2;
+                int x1g = (x1 - routingAreaLowerLeft.x) / gcellSize.x;
+                int y1g = (y1 - routingAreaLowerLeft.y) / gcellSize.y;
+                int x2g = (x2 - routingAreaLowerLeft.x) / gcellSize.x;
+                int y2g = (y2 - routingAreaLowerLeft.y) / gcellSize.y;
+                if (checkStartPoint) {
+                    if (startBump->position.x != x1 || startBump->position.y != y1) {
+                        LOG_ERROR("[Net: " + std::to_string(netIdx) + "] Start point mismatch: (" + std::to_string(x1) + ", " + std::to_string(y1) + ")");
+                    }
+                    checkStartPoint = false;
+                }
+                if (x2 != x1) {
+                    LOG_ERROR("[Net: " + std::to_string(netIdx) + "] M1 horizontal routing is forbidden!");
+                }
+                if (y2 == y1) {
+                    LOG_ERROR("[Net: " + std::to_string(netIdx) + "] M1 zero-length routing is forbidden!");
+                }
+                if ((x1 - routingAreaLowerLeft.x) % gcellSize.x != 0 || 
+                    (y1 - routingAreaLowerLeft.y) % gcellSize.y != 0 || 
+                    (x2 - routingAreaLowerLeft.x) % gcellSize.x != 0 || 
+                    (y2 - routingAreaLowerLeft.y) % gcellSize.y != 0) {
+                    LOG_ERROR("[Net: " + std::to_string(netIdx) + "] M1 routing point is not on GCell lower left corner!");
+                }
+                net->WL += std::abs(y2 - y1);
+                net->totalCost += std::abs(y2 - y1) * alpha;
+                net->gcells.push_back(gcells[y1g][x1g]);
+                if (passVia) {
+                    net->cellCost += gcells[y1g][x1g]->costM1 / 2;
+                    net->totalCost += gcells[y1g][x1g]->gammaM1 / 2;
+                } else {
+                    net->cellCost += gcells[y1g][x1g]->costM1;
+                    net->totalCost += gcells[y1g][x1g]->gammaM1;
+                }
+                passVia = false;
+                bool goUP = y2 > y1;
+                if (goUP) {
+                    for (int y = y1g + 1; y <= y2g; y++) {
+                        net->gcells.push_back(gcells[y][x1g]);
+                        net->cellCost += gcells[y][x1g]->costM1;
+                        net->totalCost += gcells[y][x1g]->gammaM1;
+
+                        if (gcells[y][x1g]->bottomEdgeCount >= gcells[y][x1g]->bottomEdgeCapacity) {
+                            net->totalCost += betaHalfMaxCellCost;
+                            net->overflow++;
+                        }
+                        gcells[y][x1g]->bottomEdgeCount++;
+                    }
+                } else {
+                    for (int y = y1g - 1; y >= y2g; y--) {
+                        net->gcells.push_back(gcells[y][x1g]);
+                        net->cellCost += gcells[y][x1g]->costM1;
+                        net->totalCost += gcells[y][x1g]->gammaM1;
+
+                        if (gcells[y+1][x1g]->bottomEdgeCount >= gcells[y+1][x1g]->bottomEdgeCapacity) {
+                            net->totalCost += betaHalfMaxCellCost;
+                            net->overflow++;
+                        }
+                        gcells[y+1][x1g]->bottomEdgeCount++;
+                    }
+                }
+                lastM1 = true;
+            } else if (command == "M2") {
+                int x1, y1, x2, y2;
+                iss >> x1 >> y1 >> x2 >> y2;
+                int x1g = (x1 - routingAreaLowerLeft.x) / gcellSize.x;
+                int y1g = (y1 - routingAreaLowerLeft.y) / gcellSize.y;
+                int x2g = (x2 - routingAreaLowerLeft.x) / gcellSize.x;
+                int y2g = (y2 - routingAreaLowerLeft.y) / gcellSize.y;
+                if (y2 != y1) {
+                    LOG_ERROR("[Net: " + std::to_string(netIdx) + "] M2 vertical routing is forbidden!");
+                }
+                if (x2 == x1) {
+                    LOG_ERROR("[Net: " + std::to_string(netIdx) + "] M2 zero-length routing is forbidden!");
+                }
+                if ((x1 - routingAreaLowerLeft.x) % gcellSize.x != 0 || 
+                    (y1 - routingAreaLowerLeft.y) % gcellSize.y != 0 || 
+                    (x2 - routingAreaLowerLeft.x) % gcellSize.x != 0 || 
+                    (y2 - routingAreaLowerLeft.y) % gcellSize.y != 0) {
+                    LOG_ERROR("[Net: " + std::to_string(netIdx) + "] M2 routing point is not on GCell lower left corner!");
+                }
+                net->WL += std::abs(x2 - x1);
+                net->totalCost += std::abs(x2 - x1) * alpha;
+                net->gcells.push_back(gcells[y1g][x1g]);
+                if (passVia) {
+                    net->cellCost += gcells[y1g][x1g]->costM2 / 2;
+                    net->totalCost += gcells[y1g][x1g]->gammaM2 / 2;
+                } else {
+                    net->cellCost += gcells[y1g][x1g]->costM2;
+                    net->totalCost += gcells[y1g][x1g]->gammaM2;
+                }
+                passVia = false;
+                bool goRIGHT = x2 > x1;
+                if (goRIGHT) {
+                    for (int x = x1g + 1; x <= x2g; x++) {
+                        net->gcells.push_back(gcells[y1g][x]);
+                        net->cellCost += gcells[y1g][x]->costM2;
+                        net->totalCost += gcells[y1g][x]->gammaM2;
+
+                        if (gcells[y1g][x]->leftEdgeCount >= gcells[y1g][x]->leftEdgeCapacity) {
+                            net->totalCost += betaHalfMaxCellCost;
+                            net->overflow++;
+                        }
+                        gcells[y1g][x]->leftEdgeCount++;
+                    }
+                } else {
+                    for (int x = x1g - 1; x >= x2g; x--) {
+                        net->gcells.push_back(gcells[y1g][x]);
+                        net->cellCost += gcells[y1g][x]->costM2;
+                        net->totalCost += gcells[y1g][x]->gammaM2;
+
+                        if (gcells[y1g][x+1]->leftEdgeCount >= gcells[y1g][x+1]->leftEdgeCapacity) {
+                            net->totalCost += betaHalfMaxCellCost;
+                            net->overflow++;
+                        }
+                        gcells[y1g][x+1]->leftEdgeCount++;
+                    }
+                }
+                lastM1 = false;
+            } else if (command == "via") {
+                GCell* latestGCell = net->gcells.back();
+                if (lastM1) {
+                    net->cellCost -= latestGCell->costM1;
+                    net->totalCost -= latestGCell->gammaM1;
+                    net->cellCost += latestGCell->costM1 / 2;
+                    net->totalCost += latestGCell->gammaM1 / 2;
+                } else {
+                    net->cellCost -= latestGCell->costM2;
+                    net->totalCost -= latestGCell->gammaM2;
+                    net->cellCost += latestGCell->costM2 / 2;
+                    net->totalCost += latestGCell->gammaM2 / 2;
+                }
+                net->viaCount++;
+                net->totalCost += deltaViaCost;
+                passVia = true;
+            } else if (command == ".end") {
+                GCell* latestGCell = net->gcells.back();
+                if (latestGCell->lowerLeft.x != endBump->position.x || latestGCell->lowerLeft.y != endBump->position.y) {
+                    LOG_ERROR("[Net: " + std::to_string(netIdx) + "] End point mismatch: (" + std::to_string(latestGCell->lowerLeft.x) + ", " + std::to_string(latestGCell->lowerLeft.y) + ")");
+                }
+                if (passVia) {
+                    if (lastM1) {
+                        LOG_ERROR("[Net: " + std::to_string(netIdx) + "] Last routing is not M1!");
+                    }
+                    net->cellCost -= latestGCell->costM2;
+                    net->totalCost -= latestGCell->gammaM2;
+                    net->cellCost += latestGCell->costM2 / 2;
+                    net->totalCost += latestGCell->gammaM2 / 2;
+                    net->cellCost += latestGCell->costM1 / 2;
+                    net->totalCost += latestGCell->gammaM1 / 2;
+                } else {
+                    if (!lastM1) {
+                        LOG_ERROR("[Net: " + std::to_string(netIdx) + "] Last routing is not M1!");
+                    }
+                }
+                break;
+            } else {
+                LOG_ERROR("Unknown command " + command);
+            }
+        }
+    }
+}
