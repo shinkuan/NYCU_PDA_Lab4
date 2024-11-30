@@ -483,8 +483,7 @@ Route* Router::router(GCell* source, GCell* target) {
 
         LOG_TRACE("Current cell: (" + std::to_string(current->lowerLeft.x) + ", " + std::to_string(current->lowerLeft.y) + ")");
         if (
-            current->left != nullptr && closedSet.find(current->left) == closedSet.end() &&
-            current->fromDirection != GCell::FromDirection::LEFT
+            current->left != nullptr && closedSet.find(current->left) == closedSet.end()
         ) {
             GCell* neighbor = current->left;
             double tentativeGScore;
@@ -537,8 +536,7 @@ Route* Router::router(GCell* source, GCell* target) {
         }
 
         if (
-            current->bottom != nullptr && closedSet.find(current->bottom) == closedSet.end() &&
-            current->fromDirection != GCell::FromDirection::BOTTOM
+            current->bottom != nullptr && closedSet.find(current->bottom) == closedSet.end()
         ) {
             GCell* neighbor = current->bottom;
             double tentativeGScore;
@@ -591,8 +589,7 @@ Route* Router::router(GCell* source, GCell* target) {
         }
 
         if (
-            current->right != nullptr && closedSet.find(current->right) == closedSet.end() &&
-            current->fromDirection != GCell::FromDirection::RIGHT
+            current->right != nullptr && closedSet.find(current->right) == closedSet.end()
         ) {
             GCell* neighbor = current->right;
             double tentativeGScore;
@@ -645,8 +642,7 @@ Route* Router::router(GCell* source, GCell* target) {
         }
 
         if (
-            current->top != nullptr && closedSet.find(current->top) == closedSet.end() &&
-            current->fromDirection != GCell::FromDirection::TOP
+            current->top != nullptr && closedSet.find(current->top) == closedSet.end()
         ) {
             GCell* neighbor = current->top;
             double tentativeGScore;
