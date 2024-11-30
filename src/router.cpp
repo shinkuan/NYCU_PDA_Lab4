@@ -422,7 +422,7 @@ Route* Router::router(GCell* source, GCell* target) {
     std::unordered_set<GCell*> openSet;
     std::priority_queue<GCell*, std::vector<GCell*>, decltype(cmp)> openSetQ(cmp);
 
-    source->gScore = 0;
+    source->gScore = source->gammaM1;
     source->fromDirection = GCell::FromDirection::ORIGIN;
     openSet.insert(source);
     openSetQ.push(source);
@@ -438,27 +438,33 @@ Route* Router::router(GCell* source, GCell* target) {
             openSetQ.pop();
         }
         if (current == target) {
-            LOG_TRACE("Found target");
+            LOG_INFO("Found route!");
+            LOG_INFO("Total cost: " + std::to_string(current->gScore));
             Route* route = new Route();
             while (current != nullptr) {
-                GCell* next = current->parent;
+                GCell* next;
                 switch (current->fromDirection) {
                     case GCell::FromDirection::ORIGIN: {
-                        break;
+                        LOG_ERROR("Invalid from direction");
+                        return nullptr;
                     }
                     case GCell::FromDirection::LEFT: {
+                        next = current->left;
                         current->addRouteLeft(route);
                         break;
                     }
                     case GCell::FromDirection::BOTTOM: {
+                        next = current->bottom;
                         current->addRouteBottom(route);
                         break;
                     }
                     case GCell::FromDirection::RIGHT: {
+                        next = current->right;
                         next->addRouteLeft(route);
                         break;
                     }
                     case GCell::FromDirection::TOP: {
+                        next = current->top;
                         next->addRouteBottom(route);
                         break;
                     }
@@ -493,11 +499,19 @@ Route* Router::router(GCell* source, GCell* target) {
                 case GCell::FromDirection::ORIGIN:
                 case GCell::FromDirection::BOTTOM:
                 case GCell::FromDirection::TOP: {
-                    tentativeGScore = current->gScore
-                                    + alphaGcellSizeX
-                                    + neighbor->gammaM2
-                                    - current->gammaM1
-                                    + current->M1M2ViaCost;
+                    if (neighbor == target) {
+                        tentativeGScore = current->gScore
+                                        + alphaGcellSizeX
+                                        + neighbor->M1M2ViaCost
+                                        - current->gammaM1
+                                        + current->M1M2ViaCost;
+                    } else {
+                        tentativeGScore = current->gScore
+                                        + alphaGcellSizeX
+                                        + neighbor->gammaM2
+                                        - current->gammaM1
+                                        + current->M1M2ViaCost;
+                    }
                     if (current->leftEdgeCount >= current->leftEdgeCapacity) {
                         tentativeGScore += betaHalfMaxCellCost;
                     }
@@ -505,9 +519,15 @@ Route* Router::router(GCell* source, GCell* target) {
                 }
                 // M2 -> M2
                 case GCell::FromDirection::RIGHT: {
-                    tentativeGScore = current->gScore
-                                    + alphaGcellSizeX
-                                    + neighbor->gammaM2;
+                    if (neighbor == target) {
+                        tentativeGScore = current->gScore
+                                        + alphaGcellSizeX
+                                        + neighbor->M1M2ViaCost;
+                    } else {
+                        tentativeGScore = current->gScore
+                                        + alphaGcellSizeX
+                                        + neighbor->gammaM2;
+                    }
                     if (current->leftEdgeCount >= current->leftEdgeCapacity) {
                         tentativeGScore += betaHalfMaxCellCost;
                     }
@@ -599,11 +619,19 @@ Route* Router::router(GCell* source, GCell* target) {
                 case GCell::FromDirection::ORIGIN:
                 case GCell::FromDirection::BOTTOM:
                 case GCell::FromDirection::TOP: {
-                    tentativeGScore = current->gScore
-                                    + alphaGcellSizeX
-                                    + neighbor->gammaM2
-                                    - current->gammaM1
-                                    + current->M1M2ViaCost;
+                    if (neighbor == target) {
+                        tentativeGScore = current->gScore
+                                        + alphaGcellSizeX
+                                        + neighbor->M1M2ViaCost
+                                        - current->gammaM1
+                                        + current->M1M2ViaCost;
+                    } else {
+                        tentativeGScore = current->gScore
+                                        + alphaGcellSizeX
+                                        + neighbor->gammaM2
+                                        - current->gammaM1
+                                        + current->M1M2ViaCost;
+                    }
                     if (neighbor->leftEdgeCount >= neighbor->leftEdgeCapacity) {
                         tentativeGScore += betaHalfMaxCellCost;
                     }
@@ -611,9 +639,15 @@ Route* Router::router(GCell* source, GCell* target) {
                 }
                 // M2 -> M2
                 case GCell::FromDirection::LEFT: {
-                    tentativeGScore = current->gScore
-                                    + alphaGcellSizeX
-                                    + neighbor->gammaM2;
+                    if (neighbor == target) {
+                        tentativeGScore = current->gScore
+                                        + alphaGcellSizeX
+                                        + neighbor->M1M2ViaCost;
+                    } else {
+                        tentativeGScore = current->gScore
+                                        + alphaGcellSizeX
+                                        + neighbor->gammaM2;
+                    }
                     if (neighbor->leftEdgeCount >= neighbor->leftEdgeCapacity) {
                         tentativeGScore += betaHalfMaxCellCost;
                     }
