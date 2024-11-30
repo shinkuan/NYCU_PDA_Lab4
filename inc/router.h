@@ -81,9 +81,6 @@ private:
     double deltaViaCost;                     // Delta * viaCost
 
     std::vector<Route*> routes;              // Routes
-
-    double heuristicManhattan(GCell* a, GCell* b);
-    double heuristicCustom(GCell* a, GCell* b);
 };
 
 

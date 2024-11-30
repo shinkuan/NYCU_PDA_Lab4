@@ -77,9 +77,7 @@ public:
     std::vector<Route*> routesBottom;   // Routes passed bottom edge
 
     GCell* parent;         // parent = parent cell
-    double fScore;         // fScore = gScore + hScore
     double gScore;         // gScore = cost of the cheapest path from start to current cell
-    double hScore;         // hScore = estimated cost from current cell to target
 
     enum class FromDirection {
         ORIGIN,
