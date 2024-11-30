@@ -6,6 +6,7 @@
 #include <set>
 #include <queue>
 #include <unordered_set>
+#include "VariadicTable.h"
 #include "evaluator.h"
 #include "logger.h"
 
@@ -564,4 +565,21 @@ void Evaluator::loadLG(const std::string& filename) {
             }
         }
     }
+}
+
+void Evaluator::printCosts() {
+    VariadicTable<std::string, int, int, double, int, double> vt({"Net", "WL", "Overflow", "Cell Cost", "Via Count", "Total Cost"});
+
+    Net* totalNet = new Net();
+    for (auto& net : nets) {
+        vt.addRow(std::to_string(net->idx), net->WL, net->overflow, net->cellCost, net->viaCount, net->totalCost);
+        totalNet->WL += net->WL;
+        totalNet->overflow += net->overflow;
+        totalNet->cellCost += net->cellCost;
+        totalNet->viaCount += net->viaCount;
+        totalNet->totalCost += net->totalCost;
+    }
+    vt.addRow("Total", totalNet->WL, totalNet->overflow, totalNet->cellCost, totalNet->viaCount, totalNet->totalCost);
+
+    vt.print(std::cout);
 }
