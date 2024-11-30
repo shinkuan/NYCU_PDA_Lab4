@@ -492,10 +492,12 @@ Route* Router::router(GCell* source, GCell* target) {
                     }
                     case GCell::FromDirection::RIGHT: {
                         next = forwardCurrent->right;
+                        next->addRouteLeft(route);
                         break;
                     }
                     case GCell::FromDirection::TOP: {
                         next = forwardCurrent->top;
+                        next->addRouteBottom(route);
                         break;
                     }
                     default: {
@@ -531,10 +533,12 @@ Route* Router::router(GCell* source, GCell* target) {
                     }
                     case GCell::FromDirection::RIGHT: {
                         next = meetingPoint->right;
+                        next->addRouteLeft(route);
                         break;
                     }
                     case GCell::FromDirection::TOP: {
                         next = meetingPoint->top;
+                        next->addRouteBottom(route);
                         break;
                     }
                     default: {
@@ -813,10 +817,12 @@ Route* Router::router(GCell* source, GCell* target) {
                     }
                     case GCell::FromDirection::RIGHT: {
                         next = meetingPoint->right;
+                        next->addRouteLeft(route);
                         break;
                     }
                     case GCell::FromDirection::TOP: {
                         next = meetingPoint->top;
+                        next->addRouteBottom(route);
                         break;
                     }
                     default: {
@@ -832,6 +838,7 @@ Route* Router::router(GCell* source, GCell* target) {
                 }
             }
             std::reverse(route->route.begin(), route->route.end());
+            route->route.pop_back();
 
             while (backwardCurrent != nullptr) {
                 GCell* next;
