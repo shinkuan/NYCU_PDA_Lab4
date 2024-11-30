@@ -55,6 +55,7 @@ public:
     void loadCost(const std::string& filename);
     void dumpRoutes(const std::string& filename);
     Route* router(GCell* source, GCell* target);
+    Route* routerBellmanFord(GCell* source, GCell* target);
 
     void solve();
 
@@ -66,6 +67,7 @@ private:
     Chip chip2;                                 // Chip 2
     std::vector<std::vector<GCell*>> gcellsM1;  // GCells in routing area M1 [y][x]
     std::vector<std::vector<GCell*>> gcellsM2;  // GCells in routing area M2 [y][x]
+    std::vector<GCell*> gcells;                 // All GCells, idx = y * gcells[0].size() + x + m2?size:0
 
     double alpha;                               // Alpha (WL cost)
     double beta;                                // Beta (Overflow cost)

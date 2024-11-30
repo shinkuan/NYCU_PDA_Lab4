@@ -72,6 +72,7 @@ public:
 
     std::vector<Route*> routesWS;       // Routes passed west or south
 
+    int    idx;                        // Index of cell
     GCell* parent;         // parent = parent cell
     double gScore;         // gScore = cost of the cheapest path from start to current cell
 

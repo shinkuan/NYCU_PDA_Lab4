@@ -6,6 +6,8 @@
 #include <set>
 #include <queue>
 #include <unordered_set>
+#include <unordered_map>
+#include <functional>
 #include "router.h"
 #include "logger.h"
 
@@ -13,15 +15,8 @@ Router::Router() {
 }
 
 Router::~Router() {
-    for (auto& row : gcellsM1) {
-        for (auto& gcell : row) {
-            delete gcell;
-        }
-    }
-    for (auto& row : gcellsM2) {
-        for (auto& gcell : row) {
-            delete gcell;
-        }
+    for (auto& gcell : gcells) {
+        delete gcell;
     }
     for (auto& route : routes) {
         delete route;
@@ -135,28 +130,38 @@ void Router::loadGridMap(const std::string& filename) {
     }
     file.close();
 
-    gcellsM1.resize(routingAreaSize.y / gcellSize.y);
+    int x_size = routingAreaSize.x / gcellSize.x;
+    int y_size = routingAreaSize.y / gcellSize.y;
+    gcellsM1.resize(y_size);
     for (auto& row : gcellsM1) {
-        row.resize(routingAreaSize.x / gcellSize.x);
+        row.resize(x_size);
     }
-    gcellsM2.resize(routingAreaSize.y / gcellSize.y);
+    gcellsM2.resize(y_size);
     for (auto& row : gcellsM2) {
-        row.resize(routingAreaSize.x / gcellSize.x);
+        row.resize(x_size);
     }
-    for (size_t y = 0; y < gcellsM1.size(); y++) {
-        for (size_t x = 0; x < gcellsM1[y].size(); x++) {
+    gcells.resize(2*x_size*y_size);
+    for (size_t y = 0; y < y_size; y++) {
+        for (size_t x = 0; x < x_size; x++) {
+            int idx;
             GCell* gcell = new GCell();
             gcell->parent = nullptr;
             gcell->gScore = DBL_MAX;
             gcell->fromDirection = GCell::FromDirection::ORIGIN;
             gcell->lowerLeft = {static_cast<int>(x) * gcellSize.x + routingAreaLowerLeft.x, static_cast<int>(y) * gcellSize.y + routingAreaLowerLeft.y};
             gcellsM1[y][x] = gcell;
+            idx = y*x_size + x;
+            gcell->idx = idx;
+            gcells[idx] = gcell;
                    gcell = new GCell();
             gcell->parent = nullptr;
             gcell->gScore = DBL_MAX;
             gcell->fromDirection = GCell::FromDirection::ORIGIN;
             gcell->lowerLeft = {static_cast<int>(x) * gcellSize.x + routingAreaLowerLeft.x, static_cast<int>(y) * gcellSize.y + routingAreaLowerLeft.y};
             gcellsM2[y][x] = gcell;
+            idx = y*x_size + x + x_size*y_size;
+            gcell->idx = idx;
+            gcells[idx] = gcell;
         }
     }
 
@@ -600,6 +605,208 @@ Route* Router::router(GCell* source, GCell* target) {
     return nullptr;
 }
 
+// Bellman-Ford Routing Implementation
+Route* Router::routerBellmanFord(GCell* source, GCell* target) {
+    LOG_INFO("Routing from (" + std::to_string(source->lowerLeft.x) + ", " + std::to_string(source->lowerLeft.y) + ") to (" + 
+             std::to_string(target->lowerLeft.x) + ", " + std::to_string(target->lowerLeft.y) + ")");
+    
+    // Number of vertices
+    int V = gcells.size();
+    
+    // Distance vector to track minimum distances
+    std::vector<double> distance(V, std::numeric_limits<double>::infinity());
+
+    // Predecessor vector to reconstruct the route
+    std::vector<GCell*> predecessors(gcells.size(), nullptr);
+    
+    // Set source distance to zero
+    int sourceIndex = source->idx;
+    distance[sourceIndex] = source->gammaCost;
+    
+    for (GCell* gcell : gcells) {
+        gcell->fromDirection = GCell::FromDirection::ORIGIN;
+    }
+
+    // Bellman-Ford relaxation
+    for (int i = 0; i < V - 1; ++i) {
+        bool updated = false;
+        
+        // Iterate through all cells as vertices
+        for (GCell* current : gcells) {
+            int currentIndex = current->idx;
+            
+            // Check West-South neighbor
+            GCell* neighbor = current->westSouth;
+            if (neighbor) {
+                int neighborIndex = neighbor->idx;
+                double edgeCost = current->costWS;
+                
+                // Add congestion penalty if edge is overcrowded
+                if (current->WSEdgeCount >= current->WSEdgeCapacity) {
+                    edgeCost += betaHalfMaxCellCost;
+                }
+                
+                if (distance[currentIndex] + edgeCost < distance[neighborIndex]) {
+                    distance[neighborIndex] = distance[currentIndex] + edgeCost;
+                    updated = true;
+                    predecessors[neighborIndex] = current;
+                    neighbor->fromDirection = GCell::FromDirection::EAST_NORTH;
+                }
+            }
+            
+            // Check East-North neighbor
+            neighbor = current->eastNorth;
+            if (neighbor) {
+                int neighborIndex = neighbor->idx;
+                double edgeCost = current->costEN;
+                
+                // Add congestion penalty if edge is overcrowded
+                if (neighbor->WSEdgeCount >= neighbor->WSEdgeCapacity) {
+                    edgeCost += betaHalfMaxCellCost;
+                }
+                
+                if (distance[currentIndex] + edgeCost < distance[neighborIndex]) {
+                    distance[neighborIndex] = distance[currentIndex] + edgeCost;
+                    updated = true;
+                    predecessors[neighborIndex] = current;
+                    neighbor->fromDirection = GCell::FromDirection::WEST_SOUTH;
+                }
+            }
+            
+            // Check Down-Up neighbor
+            neighbor = current->dowsUp;
+            if (neighbor) {
+                int neighborIndex = neighbor->idx;
+                double edgeCost = current->costDU;
+                
+                if (distance[currentIndex] + edgeCost < distance[neighborIndex]) {
+                    distance[neighborIndex] = distance[currentIndex] + edgeCost;
+                    updated = true;
+                    predecessors[neighborIndex] = current;
+                    neighbor->fromDirection = GCell::FromDirection::DOWN_UP;
+                }
+            }
+        }
+        
+        // Output the distance array after each iteration
+        std::cout << "Iteration " << i + 1 << " distances:" << std::endl;
+        for (int y = 0; y < gcellsM1.size(); y++) {
+            for (int x = 0; x < gcellsM1[y].size(); x++) {
+                int idx = y * gcellsM1[y].size() + x;
+                std::cout << std::setw(6) << std::fixed << std::setprecision(1) << distance[idx] << " ";
+            }
+            std::cout << std::endl;
+        }
+        std::cin.get();
+        // If no updates occurred, we can break early
+        if (!updated) break;
+    }
+    
+    // Check for negative cycles (optional, but good practice)
+    for (GCell* current : gcells) {
+        int currentIndex = current->idx;
+        
+        // West-South neighbor
+        if (current->westSouth && current->fromDirection != GCell::FromDirection::WEST_SOUTH) {
+            int neighborIndex = current->westSouth->idx;
+            double edgeCost = current->costWS;
+            
+            if (current->WSEdgeCount >= current->WSEdgeCapacity) {
+                edgeCost += betaHalfMaxCellCost;
+            }
+            
+            if (distance[currentIndex] + edgeCost < distance[neighborIndex]) {
+                LOG_ERROR("Negative cycle detected in the graph");
+                return nullptr;
+            }
+        }
+        
+        // Similar checks for East-North and Down-Up neighbors
+        if (current->eastNorth && current->fromDirection != GCell::FromDirection::EAST_NORTH) {
+            int neighborIndex = current->eastNorth->idx;
+            double edgeCost = current->costEN;
+            
+            if (current->eastNorth->WSEdgeCount >= current->eastNorth->WSEdgeCapacity) {
+                edgeCost += betaHalfMaxCellCost;
+            }
+            
+            if (distance[currentIndex] + edgeCost < distance[neighborIndex]) {
+                LOG_ERROR("Negative cycle detected in the graph");
+                return nullptr;
+            }
+        }
+
+        if (current->dowsUp && current->fromDirection != GCell::FromDirection::DOWN_UP) {
+            int neighborIndex = current->dowsUp->idx;
+            double edgeCost = current->costDU;
+            
+            if (distance[currentIndex] + edgeCost < distance[neighborIndex]) {
+                LOG_ERROR("Negative cycle detected in the graph");
+                return nullptr;
+            }
+        }
+    }
+    
+    // Check if target is reachable
+    int targetIndex = target->idx;
+    if (distance[targetIndex] == std::numeric_limits<double>::infinity()) {
+        LOG_INFO("No route found to target");
+        return nullptr;
+    }
+    
+    // Reconstruct the route
+    Route* route = new Route();
+    GCell* current = target;
+    while (current != nullptr) {
+        route->route.push_back(current);
+        switch (current->fromDirection) {
+            case GCell::FromDirection::ORIGIN:{
+                LOG_ERROR("Invalid from direction");
+                return nullptr;
+            }
+            case GCell::FromDirection::WEST_SOUTH: {
+                if (predecessors[current->idx] != current->westSouth) {
+                    LOG_ERROR("Invalid predecessor");
+                }
+                current->addRoute(route);
+                current = current->westSouth;
+                break;
+            }
+            case GCell::FromDirection::EAST_NORTH:{
+                if (predecessors[current->idx] != current->eastNorth) {
+                    LOG_ERROR("Invalid predecessor");
+                }
+                current = current->eastNorth;
+                current->addRoute(route);
+                break;
+            }
+            case GCell::FromDirection::DOWN_UP:{
+                if (predecessors[current->idx] != current->dowsUp) {
+                    LOG_ERROR("Invalid predecessor");
+                }
+                current = current->dowsUp;
+                break;
+            }
+            default:{
+                LOG_ERROR("Unknown from direction");
+                return nullptr;
+            }
+        }
+        if (current == source) {
+            route->route.push_back(current);
+            break;
+        }
+    }
+    
+    // Reverse the route to get correct order
+    std::reverse(route->route.begin(), route->route.end());
+    
+    LOG_INFO("Found route!");
+    LOG_INFO("Total cost: " + std::to_string(distance[targetIndex]));
+    
+    return route;
+}
+
 void Router::solve() {
     // Run
     LOG_INFO("Running router");
@@ -611,7 +818,7 @@ void Router::solve() {
         if (bump1.idx != bump2.idx) {
             LOG_ERROR("Bump index mismatch");
         }
-        Route* route = router(bump1.gcell, bump2.gcell);
+        Route* route = routerBellmanFord(bump1.gcell, bump2.gcell);
         route->idx = bump1.idx;
         if (route == nullptr) {
             LOG_ERROR("Cannot find route from (" + std::to_string(bump1.gcell->lowerLeft.x) + ", " + std::to_string(bump1.gcell->lowerLeft.y) + ") to (" + std::to_string(bump2.gcell->lowerLeft.x) + ", " + std::to_string(bump2.gcell->lowerLeft.y) + ")");
