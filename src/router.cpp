@@ -689,6 +689,7 @@ Route* Router::routerBellmanFord(GCell* source, GCell* target) {
         }
         
         // Output the distance array after each iteration
+#ifdef DEBUG
         std::cout << "Iteration " << i + 1 << " distances:" << std::endl;
         for (int y = 0; y < gcellsM1.size(); y++) {
             for (int x = 0; x < gcellsM1[y].size(); x++) {
@@ -697,7 +698,8 @@ Route* Router::routerBellmanFord(GCell* source, GCell* target) {
             }
             std::cout << std::endl;
         }
-        std::cin.get();
+        // std::cin.get();
+#endif
         // If no updates occurred, we can break early
         if (!updated) break;
     }
