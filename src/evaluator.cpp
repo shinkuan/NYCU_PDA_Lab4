@@ -6,13 +6,13 @@
 #include <set>
 #include <queue>
 #include <unordered_set>
-#include "router.h"
+#include "evaluator.h"
 #include "logger.h"
 
-Router::Router() {
+Evaluator::Evaluator() {
 }
 
-Router::~Router() {
+Evaluator::~Evaluator() {
     for (auto& row : gcells) {
         for (auto& gcell : row) {
             delete gcell;
@@ -27,7 +27,7 @@ bool is_blank( const std::string & s ) {
   return s.find_first_not_of( " \f\n\r\t\v" ) == s.npos;
 }
 
-void Router::loadGridMap(const std::string& filename) {
+void Evaluator::loadGridMap(const std::string& filename) {
     // Load grid map
     LOG_INFO("Loading grid map from " + filename);
 
@@ -194,7 +194,7 @@ void Router::loadGridMap(const std::string& filename) {
     }
 }
 
-void Router::loadGCells(const std::string& filename) {
+void Evaluator::loadGCells(const std::string& filename) {
     // Load gcells
     LOG_INFO("Loading gcells from " + filename);
 
@@ -241,7 +241,7 @@ void Router::loadGCells(const std::string& filename) {
     }        
 }
 
-void Router::loadCost(const std::string& filename) {
+void Evaluator::loadCost(const std::string& filename) {
     // Load cost
     LOG_INFO("Loading cost from " + filename);
 
@@ -348,7 +348,7 @@ void Router::loadCost(const std::string& filename) {
     }
 }
 
-void Router::dumpRoutes(const std::string& filename) {
+void Evaluator::dumpRoutes(const std::string& filename) {
     // Dump routes
     LOG_INFO("Dumping routes to " + filename);
 
@@ -412,18 +412,18 @@ void Router::dumpRoutes(const std::string& filename) {
     file.close();
 }
 
-double Router::heuristicManhattan(GCell* a, GCell* b) {
+double Evaluator::heuristicManhattan(GCell* a, GCell* b) {
     // Manhattan distance
     return (std::abs(a->lowerLeft.x - b->lowerLeft.x) + std::abs(a->lowerLeft.y - b->lowerLeft.y))*alpha*medianCellCost;
 }
 
-double Router::heuristicCustom(GCell* a, GCell* b) {
+double Evaluator::heuristicCustom(GCell* a, GCell* b) {
     // TODO: Custom heuristic
     return 0.0;
 }
 
 // https://zh.wikipedia.org/zh-tw/A*搜尋演算法
-Route* Router::router(GCell* source, GCell* target) {
+Route* Evaluator::router(GCell* source, GCell* target) {
     // Route
     LOG_INFO("Routing from (" + std::to_string(source->lowerLeft.x) + ", " + std::to_string(source->lowerLeft.y) + ") to (" + std::to_string(target->lowerLeft.x) + ", " + std::to_string(target->lowerLeft.y) + ")");
     
@@ -724,7 +724,7 @@ Route* Router::router(GCell* source, GCell* target) {
     return nullptr;
 }
 
-void Router::solve() {
+void Evaluator::solve() {
     // Run
     LOG_INFO("Running router");
 

@@ -45,10 +45,10 @@
 #include "chip.h"
 
 
-class Router {
+class Evaluator {
 public:
-    Router();
-    ~Router();
+    Evaluator();
+    ~Evaluator();
 
     void loadGridMap(const std::string& filename);
     void loadGCells(const std::string& filename);

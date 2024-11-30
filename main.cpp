@@ -1,7 +1,7 @@
 #include <iostream>
 #include <chrono>
 #include "common.h"
-#include "router.h"
+#include "evaluator.h"
 
 int main(int argc, char* argv[]) {
     if (argc != 5) {
@@ -11,7 +11,7 @@ int main(int argc, char* argv[]) {
 
     auto start = std::chrono::high_resolution_clock::now();
 
-    Router router;
+    Evaluator router;
     router.loadGridMap(argv[1]);
     router.loadGCells(argv[2]);
     router.loadCost(argv[3]);
