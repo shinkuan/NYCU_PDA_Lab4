@@ -40,6 +40,7 @@
 #include <string>
 #include <set>
 #include <unordered_set>
+#include <random>
 #include "common.h"
 #include "gcell.h"
 #include "chip.h"
@@ -56,7 +57,11 @@ public:
     void dumpRoutes(const std::string& filename);
     Route* router(GCell* source, GCell* target);
 
-    void solve();
+    double solve();
+
+    void setSeed(unsigned seed) {
+        rng.seed(seed);
+    }
 
 private:
     Point<int> routingAreaLowerLeft;         // Real coordinate of lower left corner of routing area
@@ -81,6 +86,9 @@ private:
     double deltaViaCost;                     // Delta * viaCost
 
     std::vector<Route*> routes;              // Routes
+
+    // Random
+    std::mt19937 rng;
 };
 
 

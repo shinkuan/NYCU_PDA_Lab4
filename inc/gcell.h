@@ -50,6 +50,7 @@ class GCell;
 struct Route {
     std::vector<GCell*> route;
     int idx;
+    double cost;
 };
 
 class GCell {
@@ -73,9 +74,6 @@ public:
     GCell* right;                       // Pointer to right cell
     GCell* top;                         // Pointer to top cell
 
-    std::vector<Route*> routesLeft;     // Routes passed left edge
-    std::vector<Route*> routesBottom;   // Routes passed bottom edge
-
     GCell* parent;         // parent = parent cell
     double gScore;         // gScore = cost of the cheapest path from start to current cell
 
@@ -89,11 +87,9 @@ public:
     FromDirection fromDirection; // fromDirection = from direction of parent cell
 
     void addRouteLeft(Route* route) {
-        routesLeft.push_back(route);
         leftEdgeCount++;
     }
     void addRouteBottom(Route* route) {
-        routesBottom.push_back(route);
         bottomEdgeCount++;
     }
 };

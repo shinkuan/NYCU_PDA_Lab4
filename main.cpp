@@ -2,6 +2,8 @@
 #include <chrono>
 #include "common.h"
 #include "router.h"
+#include <cfloat>
+#include <omp.h>
 
 int main(int argc, char* argv[]) {
     if (argc != 5) {
@@ -12,6 +14,7 @@ int main(int argc, char* argv[]) {
     auto start = std::chrono::high_resolution_clock::now();
 
     Router router;
+    router.setSeed(4176420);
     router.loadGridMap(argv[1]);
     router.loadGCells(argv[2]);
     router.loadCost(argv[3]);

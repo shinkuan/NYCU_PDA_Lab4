@@ -6,6 +6,8 @@
 #include <set>
 #include <queue>
 #include <unordered_set>
+#include <numeric>
+#include <random>
 #include "router.h"
 #include "logger.h"
 
@@ -441,11 +443,13 @@ Route* Router::router(GCell* source, GCell* target) {
             LOG_INFO("Found route!");
             LOG_INFO("Total cost: " + std::to_string(current->gScore));
             Route* route = new Route();
+            route->cost = current->gScore;
             while (current != nullptr) {
                 GCell* next;
                 switch (current->fromDirection) {
                     case GCell::FromDirection::ORIGIN: {
                         LOG_ERROR("Invalid from direction");
+                        delete route;
                         return nullptr;
                     }
                     case GCell::FromDirection::LEFT: {
@@ -470,6 +474,7 @@ Route* Router::router(GCell* source, GCell* target) {
                     }
                     default: {
                         LOG_ERROR("Unknown from direction");
+                        delete route;
                         return nullptr;
                     }
                 }
@@ -732,24 +737,34 @@ Route* Router::router(GCell* source, GCell* target) {
     return nullptr;
 }
 
-void Router::solve() {
+double Router::solve() {
     // Run
     LOG_INFO("Running router");
 
-    for (size_t bump_idx = 0; bump_idx < chip1.bumps.size(); bump_idx++) {
+    std::vector<size_t> bump_indices(chip1.bumps.size());
+    std::iota(bump_indices.begin(), bump_indices.end(), 0);
+    std::shuffle(bump_indices.begin(), bump_indices.end(), rng);
+
+    double totalCost = 0;
+    for (size_t i = 0; i < bump_indices.size(); i++) {
+        size_t bump_idx = bump_indices[i];
+    // for (size_t bump_idx = 0; bump_idx < chip1.bumps.size(); bump_idx++) {
         LOG_INFO("Routing bump " + std::to_string(bump_idx));
         Bump& bump1 = chip1.bumps[bump_idx];
         Bump& bump2 = chip2.bumps[bump_idx];
         if (bump1.idx != bump2.idx) {
             LOG_ERROR("Bump index mismatch");
+            return DBL_MAX;
         }
         Route* route = router(bump1.gcell, bump2.gcell);
         route->idx = bump1.idx;
         if (route == nullptr) {
             LOG_ERROR("Cannot find route from (" + std::to_string(bump1.gcell->lowerLeft.x) + ", " + std::to_string(bump1.gcell->lowerLeft.y) + ") to (" + std::to_string(bump2.gcell->lowerLeft.x) + ", " + std::to_string(bump2.gcell->lowerLeft.y) + ")");
+            return DBL_MAX;
         } else {
             LOG_INFO("Success");
             routes.push_back(route);
+            totalCost += route->cost;
         }
     }
     LOG_INFO("Router finished");
@@ -757,4 +772,6 @@ void Router::solve() {
     std::sort(routes.begin(), routes.end(), [](const Route* a, const Route* b) {
         return a->idx < b->idx;
     });
+
+    return totalCost;
 }
