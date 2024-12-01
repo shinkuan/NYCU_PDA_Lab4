@@ -6,7 +6,7 @@
 #include <set>
 #include <queue>
 #include <unordered_set>
-#include "VariadicTable.h"
+#include "variadicTable.h"
 #include "evaluator.h"
 #include "logger.h"
 
