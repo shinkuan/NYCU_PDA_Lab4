@@ -454,22 +454,22 @@ Route* Router::router(GCell* source, GCell* target) {
                     }
                     case GCell::FromDirection::LEFT: {
                         next = current->left;
-                        current->addRouteLeft(route);
+                        current->addRouteLeft();
                         break;
                     }
                     case GCell::FromDirection::BOTTOM: {
                         next = current->bottom;
-                        current->addRouteBottom(route);
+                        current->addRouteBottom();
                         break;
                     }
                     case GCell::FromDirection::RIGHT: {
                         next = current->right;
-                        next->addRouteLeft(route);
+                        next->addRouteLeft();
                         break;
                     }
                     case GCell::FromDirection::TOP: {
                         next = current->top;
-                        next->addRouteBottom(route);
+                        next->addRouteBottom();
                         break;
                     }
                     default: {
@@ -517,7 +517,7 @@ Route* Router::router(GCell* source, GCell* target) {
                                         - current->gammaM1
                                         + current->M1M2ViaCost;
                     }
-                    if (current->leftEdgeCount >= current->leftEdgeCapacity) {
+                    if (current->isLeftEdgeFull) {
                         tentativeGScore += betaHalfMaxCellCost;
                     }
                     break;
@@ -533,7 +533,7 @@ Route* Router::router(GCell* source, GCell* target) {
                                         + alphaGcellSizeX
                                         + neighbor->gammaM2;
                     }
-                    if (current->leftEdgeCount >= current->leftEdgeCapacity) {
+                    if (current->isLeftEdgeFull) {
                         tentativeGScore += betaHalfMaxCellCost;
                     }
                     break;
@@ -573,7 +573,7 @@ Route* Router::router(GCell* source, GCell* target) {
                     tentativeGScore = current->gScore
                                     + alphaGcellSizeY
                                     + neighbor->gammaM1;
-                    if (current->bottomEdgeCount >= current->bottomEdgeCapacity) {
+                    if (current->isBottomEdgeFull) {
                         tentativeGScore += betaHalfMaxCellCost;
                     }
                     break;
@@ -586,7 +586,7 @@ Route* Router::router(GCell* source, GCell* target) {
                                     + neighbor->gammaM1
                                     - current->gammaM2
                                     + current->M1M2ViaCost;
-                    if (current->bottomEdgeCount >= current->bottomEdgeCapacity) {
+                    if (current->isBottomEdgeFull) {
                         tentativeGScore += betaHalfMaxCellCost;
                     }
                     break;
@@ -637,7 +637,7 @@ Route* Router::router(GCell* source, GCell* target) {
                                         - current->gammaM1
                                         + current->M1M2ViaCost;
                     }
-                    if (neighbor->leftEdgeCount >= neighbor->leftEdgeCapacity) {
+                    if (neighbor->isLeftEdgeFull) {
                         tentativeGScore += betaHalfMaxCellCost;
                     }
                     break;
@@ -653,7 +653,7 @@ Route* Router::router(GCell* source, GCell* target) {
                                         + alphaGcellSizeX
                                         + neighbor->gammaM2;
                     }
-                    if (neighbor->leftEdgeCount >= neighbor->leftEdgeCapacity) {
+                    if (neighbor->isLeftEdgeFull) {
                         tentativeGScore += betaHalfMaxCellCost;
                     }
                     break;
@@ -693,7 +693,7 @@ Route* Router::router(GCell* source, GCell* target) {
                     tentativeGScore = current->gScore
                                     + alphaGcellSizeY
                                     + neighbor->gammaM1;
-                    if (neighbor->bottomEdgeCount >= neighbor->bottomEdgeCapacity) {
+                    if (neighbor->isBottomEdgeFull) {
                         tentativeGScore += betaHalfMaxCellCost;
                     }
                     break;
@@ -706,7 +706,7 @@ Route* Router::router(GCell* source, GCell* target) {
                                     + neighbor->gammaM1
                                     - current->gammaM2
                                     + current->M1M2ViaCost;
-                    if (neighbor->bottomEdgeCount >= neighbor->bottomEdgeCapacity) {
+                    if (neighbor->isBottomEdgeFull) {
                         tentativeGScore += betaHalfMaxCellCost;
                     }
                     break;
