@@ -493,7 +493,7 @@ Route* Router::router(GCell* source, GCell* target) {
         closedSet.insert(current);
 
         // LOG_TRACE("Current cell: (" + std::to_string(current->lowerLeft.x) + ", " + std::to_string(current->lowerLeft.y) + ")");
-        if (
+        if (current->fromDirection != GCell::FromDirection::LEFT) if (
             current->left != nullptr && closedSet.find(current->left) == closedSet.end()
         ) {
             GCell* neighbor = current->left;
@@ -560,7 +560,7 @@ Route* Router::router(GCell* source, GCell* target) {
             }    
         }
 
-        if (
+        if (current->fromDirection != GCell::FromDirection::BOTTOM) if (
             current->bottom != nullptr && closedSet.find(current->bottom) == closedSet.end()
         ) {
             GCell* neighbor = current->bottom;
@@ -613,7 +613,7 @@ Route* Router::router(GCell* source, GCell* target) {
             }
         }
 
-        if (
+        if (current->fromDirection != GCell::FromDirection::RIGHT) if (
             current->right != nullptr && closedSet.find(current->right) == closedSet.end()
         ) {
             GCell* neighbor = current->right;
@@ -680,7 +680,7 @@ Route* Router::router(GCell* source, GCell* target) {
             }
         }
 
-        if (
+        if (current->fromDirection != GCell::FromDirection::TOP) if (
             current->top != nullptr && closedSet.find(current->top) == closedSet.end()
         ) {
             GCell* neighbor = current->top;
