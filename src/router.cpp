@@ -8,6 +8,7 @@
 #include <unordered_set>
 #include <numeric>
 #include <random>
+#include "fiboqueue.h"
 #include "router.h"
 #include "logger.h"
 
@@ -417,28 +418,23 @@ Route* Router::router(GCell* source, GCell* target) {
     // Route
     LOG_INFO("Routing from (" + std::to_string(source->lowerLeft.x) + ", " + std::to_string(source->lowerLeft.y) + ") to (" + std::to_string(target->lowerLeft.x) + ", " + std::to_string(target->lowerLeft.y) + ")");
     
-    const auto cmp = [](GCell* a, GCell* b) {
-        return a->gScore > b->gScore;
-    };
+    // const auto cmp = [](GCell* a, GCell* b) {
+    //     return a->gScore < b->gScore;
+    // };
     std::unordered_set<GCell*> closedSet;
-    std::unordered_set<GCell*> openSet;
-    std::priority_queue<GCell*, std::vector<GCell*>, decltype(cmp)> openSetQ(cmp);
+    // std::unordered_set<GCell*> openSet;
+    // std::priority_queue<GCell*, std::vector<GCell*>, decltype(cmp)> openSetQ(cmp);
+    GCell::GCellCmp cmp;
+    FibQueue<GCell*, GCell::GCellCmp> openSetQ(cmp);
 
     source->gScore = source->gammaM1;
     source->fromDirection = GCell::FromDirection::ORIGIN;
-    openSet.insert(source);
-    openSetQ.push(source);
+    source->fibNode = openSetQ.push(source);
+    // openSet.insert(source);
 
-    while (!openSet.empty()) {
-        GCell* current;
-        while (true) {
-            current = openSetQ.top();
-            if (openSet.find(current) != openSet.end()) {
-                openSetQ.pop();
-                break;
-            }
-            openSetQ.pop();
-        }
+    while (!openSetQ.empty()) {
+        GCell* current = openSetQ.top();
+        openSetQ.pop();
         if (current == target) {
             LOG_INFO("Found route!");
             LOG_INFO("Total cost: " + std::to_string(current->gScore));
@@ -454,22 +450,22 @@ Route* Router::router(GCell* source, GCell* target) {
                     }
                     case GCell::FromDirection::LEFT: {
                         next = current->left;
-                        current->addRouteLeft(route);
+                        current->addRouteLeft();
                         break;
                     }
                     case GCell::FromDirection::BOTTOM: {
                         next = current->bottom;
-                        current->addRouteBottom(route);
+                        current->addRouteBottom();
                         break;
                     }
                     case GCell::FromDirection::RIGHT: {
                         next = current->right;
-                        next->addRouteLeft(route);
+                        next->addRouteLeft();
                         break;
                     }
                     case GCell::FromDirection::TOP: {
                         next = current->top;
-                        next->addRouteBottom(route);
+                        next->addRouteBottom();
                         break;
                     }
                     default: {
@@ -489,7 +485,7 @@ Route* Router::router(GCell* source, GCell* target) {
             return route;
         }
 
-        openSet.erase(current);
+        // openSet.erase(current);
         closedSet.insert(current);
 
         LOG_TRACE("Current cell: (" + std::to_string(current->lowerLeft.x) + ", " + std::to_string(current->lowerLeft.y) + ")");
@@ -517,7 +513,7 @@ Route* Router::router(GCell* source, GCell* target) {
                                         - current->gammaM1
                                         + current->M1M2ViaCost;
                     }
-                    if (current->leftEdgeCount >= current->leftEdgeCapacity) {
+                    if (current->isLeftEdgeFull) {
                         tentativeGScore += betaHalfMaxCellCost;
                     }
                     break;
@@ -533,7 +529,7 @@ Route* Router::router(GCell* source, GCell* target) {
                                         + alphaGcellSizeX
                                         + neighbor->gammaM2;
                     }
-                    if (current->leftEdgeCount >= current->leftEdgeCapacity) {
+                    if (current->isLeftEdgeFull) {
                         tentativeGScore += betaHalfMaxCellCost;
                     }
                     break;
@@ -544,20 +540,17 @@ Route* Router::router(GCell* source, GCell* target) {
                 }
             }
 
-            bool tentativeIsBetter = false;
-            if (openSet.find(neighbor) == openSet.end()) {
-                tentativeIsBetter = true;
-            } else if (tentativeGScore < neighbor->gScore) {
-                tentativeIsBetter = true;
-            }
-
-            if (tentativeIsBetter) {
+            if (neighbor->fibNode == nullptr) {
                 neighbor->parent = current;
                 neighbor->gScore = tentativeGScore;
                 neighbor->fromDirection = GCell::FromDirection::RIGHT;
-                openSet.insert(neighbor);
-                openSetQ.push(neighbor);
-            }    
+                neighbor->fibNode = openSetQ.push(neighbor);
+            } else if (tentativeGScore < neighbor->gScore) {
+                neighbor->parent = current;
+                neighbor->gScore = tentativeGScore;
+                neighbor->fromDirection = GCell::FromDirection::RIGHT;
+                openSetQ.decrease_key(neighbor->fibNode, neighbor);
+            }
         }
 
         if (
@@ -573,7 +566,7 @@ Route* Router::router(GCell* source, GCell* target) {
                     tentativeGScore = current->gScore
                                     + alphaGcellSizeY
                                     + neighbor->gammaM1;
-                    if (current->bottomEdgeCount >= current->bottomEdgeCapacity) {
+                    if (current->isBottomEdgeFull) {
                         tentativeGScore += betaHalfMaxCellCost;
                     }
                     break;
@@ -586,7 +579,7 @@ Route* Router::router(GCell* source, GCell* target) {
                                     + neighbor->gammaM1
                                     - current->gammaM2
                                     + current->M1M2ViaCost;
-                    if (current->bottomEdgeCount >= current->bottomEdgeCapacity) {
+                    if (current->isBottomEdgeFull) {
                         tentativeGScore += betaHalfMaxCellCost;
                     }
                     break;
@@ -597,19 +590,16 @@ Route* Router::router(GCell* source, GCell* target) {
                 }
             }
 
-            bool tentativeIsBetter = false;
-            if (openSet.find(neighbor) == openSet.end()) {
-                tentativeIsBetter = true;
-            } else if (tentativeGScore < neighbor->gScore) {
-                tentativeIsBetter = true;
-            }
-
-            if (tentativeIsBetter) {
+            if (neighbor->fibNode == nullptr) {
                 neighbor->parent = current;
                 neighbor->gScore = tentativeGScore;
                 neighbor->fromDirection = GCell::FromDirection::TOP;
-                openSet.insert(neighbor);
-                openSetQ.push(neighbor);
+                neighbor->fibNode = openSetQ.push(neighbor);
+            } else if (tentativeGScore < neighbor->gScore) {
+                neighbor->parent = current;
+                neighbor->gScore = tentativeGScore;
+                neighbor->fromDirection = GCell::FromDirection::TOP;
+                openSetQ.decrease_key(neighbor->fibNode, neighbor);
             }
         }
 
@@ -637,7 +627,7 @@ Route* Router::router(GCell* source, GCell* target) {
                                         - current->gammaM1
                                         + current->M1M2ViaCost;
                     }
-                    if (neighbor->leftEdgeCount >= neighbor->leftEdgeCapacity) {
+                    if (neighbor->isLeftEdgeFull) {
                         tentativeGScore += betaHalfMaxCellCost;
                     }
                     break;
@@ -653,7 +643,7 @@ Route* Router::router(GCell* source, GCell* target) {
                                         + alphaGcellSizeX
                                         + neighbor->gammaM2;
                     }
-                    if (neighbor->leftEdgeCount >= neighbor->leftEdgeCapacity) {
+                    if (neighbor->isLeftEdgeFull) {
                         tentativeGScore += betaHalfMaxCellCost;
                     }
                     break;
@@ -664,19 +654,16 @@ Route* Router::router(GCell* source, GCell* target) {
                 }
             }
 
-            bool tentativeIsBetter = false;
-            if (openSet.find(neighbor) == openSet.end()) {
-                tentativeIsBetter = true;
-            } else if (tentativeGScore < neighbor->gScore) {
-                tentativeIsBetter = true;
-            }
-
-            if (tentativeIsBetter) {
+            if (neighbor->fibNode == nullptr) {
                 neighbor->parent = current;
                 neighbor->gScore = tentativeGScore;
                 neighbor->fromDirection = GCell::FromDirection::LEFT;
-                openSet.insert(neighbor);
-                openSetQ.push(neighbor);
+                neighbor->fibNode = openSetQ.push(neighbor);
+            } else if (tentativeGScore < neighbor->gScore) {
+                neighbor->parent = current;
+                neighbor->gScore = tentativeGScore;
+                neighbor->fromDirection = GCell::FromDirection::LEFT;
+                openSetQ.decrease_key(neighbor->fibNode, neighbor);
             }
         }
 
@@ -693,7 +680,7 @@ Route* Router::router(GCell* source, GCell* target) {
                     tentativeGScore = current->gScore
                                     + alphaGcellSizeY
                                     + neighbor->gammaM1;
-                    if (neighbor->bottomEdgeCount >= neighbor->bottomEdgeCapacity) {
+                    if (neighbor->isBottomEdgeFull) {
                         tentativeGScore += betaHalfMaxCellCost;
                     }
                     break;
@@ -706,7 +693,7 @@ Route* Router::router(GCell* source, GCell* target) {
                                     + neighbor->gammaM1
                                     - current->gammaM2
                                     + current->M1M2ViaCost;
-                    if (neighbor->bottomEdgeCount >= neighbor->bottomEdgeCapacity) {
+                    if (neighbor->isBottomEdgeFull) {
                         tentativeGScore += betaHalfMaxCellCost;
                     }
                     break;
@@ -717,19 +704,16 @@ Route* Router::router(GCell* source, GCell* target) {
                 }
             }
 
-            bool tentativeIsBetter = false;
-            if (openSet.find(neighbor) == openSet.end()) {
-                tentativeIsBetter = true;
-            } else if (tentativeGScore < neighbor->gScore) {
-                tentativeIsBetter = true;
-            }
-
-            if (tentativeIsBetter) {
+            if (neighbor->fibNode == nullptr) {
                 neighbor->parent = current;
                 neighbor->gScore = tentativeGScore;
                 neighbor->fromDirection = GCell::FromDirection::BOTTOM;
-                openSet.insert(neighbor);
-                openSetQ.push(neighbor);
+                neighbor->fibNode = openSetQ.push(neighbor);
+            } else if (tentativeGScore < neighbor->gScore) {
+                neighbor->parent = current;
+                neighbor->gScore = tentativeGScore;
+                neighbor->fromDirection = GCell::FromDirection::BOTTOM;
+                openSetQ.decrease_key(neighbor->fibNode, neighbor);
             }
         }
     }
@@ -757,6 +741,11 @@ double Router::solve() {
             return DBL_MAX;
         }
         Route* route = router(bump1.gcell, bump2.gcell);
+        for (auto& row : gcells) {
+            for (auto& gcell : row) {
+                gcell->fibNode = nullptr;
+            }
+        }
         route->idx = bump1.idx;
         if (route == nullptr) {
             LOG_ERROR("Cannot find route from (" + std::to_string(bump1.gcell->lowerLeft.x) + ", " + std::to_string(bump1.gcell->lowerLeft.y) + ") to (" + std::to_string(bump2.gcell->lowerLeft.x) + ", " + std::to_string(bump2.gcell->lowerLeft.y) + ")");

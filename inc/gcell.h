@@ -38,6 +38,7 @@
 
 #include <vector>
 #include <mutex>
+#include "fiboqueue.h"
 #include "common.h"
 
 
@@ -69,6 +70,25 @@ public:
     unsigned int leftEdgeCount   = 0;   // Count of left edge
     unsigned int bottomEdgeCount = 0;   // Count of bottom edge
 
+    bool isLeftEdgeFull = false;        // Is left edge full
+    bool isBottomEdgeFull = false;      // Is bottom edge full
+
+    // Equvalent to:
+    // ```
+    // const auto cmp = [](GCell* a, GCell* b) {
+    //     return a->gScore < b->gScore;
+    // };
+    // decltype(cmp)
+    // ```
+    class GCellCmp {
+    public:
+        bool operator()(GCell* a, GCell* b) const {
+            return a->gScore < b->gScore;
+        }
+    };
+
+    FibQueue<GCell*, GCellCmp>::Node* fibNode = nullptr;
+
     GCell* left;                        // Pointer to left cell
     GCell* bottom;                      // Pointer to bottom cell
     GCell* right;                       // Pointer to right cell
@@ -86,13 +106,16 @@ public:
     };
     FromDirection fromDirection; // fromDirection = from direction of parent cell
 
-    void addRouteLeft(Route* route) {
+    void addRouteLeft() {
         leftEdgeCount++;
+        isLeftEdgeFull = leftEdgeCount >= leftEdgeCapacity;
     }
-    void addRouteBottom(Route* route) {
+    void addRouteBottom() {
         bottomEdgeCount++;
+        isBottomEdgeFull = bottomEdgeCount >= bottomEdgeCapacity;
     }
 };
+
 
 
 #endif // _GCELL_H_
