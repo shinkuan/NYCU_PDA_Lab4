@@ -31,11 +31,11 @@ bool is_blank( const std::string & s ) {
 
 void Router::loadGridMap(const std::string& filename) {
     // Load grid map
-    LOG_INFO("Loading grid map from " + filename);
+    // LOG_INFO("Loading grid map from " + filename);
 
     std::ifstream file(filename);
     if (!file.is_open()) {
-        LOG_ERROR("Cannot open file " + filename);
+        // LOG_ERROR("Cannot open file " + filename);
         return;
     }
 
@@ -78,21 +78,21 @@ void Router::loadGridMap(const std::string& filename) {
                 } else if (command == ".b") {
                     state = State::LoadingBump;
                 } else {
-                    LOG_ERROR("Unknown command " + command);
+                    // LOG_ERROR("Unknown command " + command);
                 }
                 break;
             }
             case State::LoadingRoutingArea: {
                 iss >> routingAreaLowerLeft.x >> routingAreaLowerLeft.y >> routingAreaSize.x >> routingAreaSize.y;
                 state = State::LoadingCommand;
-                LOG_TRACE("Routing area lower left: (" + std::to_string(routingAreaLowerLeft.x) + ", " + std::to_string(routingAreaLowerLeft.y) + ")");
-                LOG_TRACE("Routing area size: (" + std::to_string(routingAreaSize.x) + ", " + std::to_string(routingAreaSize.y) + ")");
+                // LOG_TRACE("Routing area lower left: (" + std::to_string(routingAreaLowerLeft.x) + ", " + std::to_string(routingAreaLowerLeft.y) + ")");
+                // LOG_TRACE("Routing area size: (" + std::to_string(routingAreaSize.x) + ", " + std::to_string(routingAreaSize.y) + ")");
                 break;
             }
             case State::LoadingGCellSize: {
                 iss >> gcellSize.x >> gcellSize.y;
                 state = State::LoadingCommand;
-                LOG_TRACE("GCell size: (" + std::to_string(gcellSize.x) + ", " + std::to_string(gcellSize.y) + ")");
+                // LOG_TRACE("GCell size: (" + std::to_string(gcellSize.x) + ", " + std::to_string(gcellSize.y) + ")");
                 break;
             }
             case State::LoadingChip1: {
@@ -100,8 +100,8 @@ void Router::loadGridMap(const std::string& filename) {
                 iss >> x >> y >> chip1.size.x >> chip1.size.y;
                 chip1.lowerLeft = {x + routingAreaLowerLeft.x, y + routingAreaLowerLeft.y};
                 state = State::LoadingCommand;
-                LOG_TRACE("Chip 1 lower left: (" + std::to_string(chip1.lowerLeft.x) + ", " + std::to_string(chip1.lowerLeft.y) + ")");
-                LOG_TRACE("Chip 1 size: (" + std::to_string(chip1.size.x) + ", " + std::to_string(chip1.size.y) + ")");
+                // LOG_TRACE("Chip 1 lower left: (" + std::to_string(chip1.lowerLeft.x) + ", " + std::to_string(chip1.lowerLeft.y) + ")");
+                // LOG_TRACE("Chip 1 size: (" + std::to_string(chip1.size.x) + ", " + std::to_string(chip1.size.y) + ")");
                 break;
             }
             case State::LoadingBump: {
@@ -110,11 +110,11 @@ void Router::loadGridMap(const std::string& filename) {
                 if (loadingChip1) {
                     Bump bump = {bidx, {bx + chip1.lowerLeft.x, by + chip1.lowerLeft.y}, nullptr};
                     chip1.bumps.push_back(bump);
-                    LOG_TRACE("Chip 1 bump (" + std::to_string(bump.position.x) + ", " + std::to_string(bump.position.y) + ")");
+                    // LOG_TRACE("Chip 1 bump (" + std::to_string(bump.position.x) + ", " + std::to_string(bump.position.y) + ")");
                 } else {
                     Bump bump = {bidx, {bx + chip2.lowerLeft.x, by + chip2.lowerLeft.y}, nullptr};
                     chip2.bumps.push_back(bump);
-                    LOG_TRACE("Chip 2 bump (" + std::to_string(bump.position.x) + ", " + std::to_string(bump.position.y) + ")");
+                    // LOG_TRACE("Chip 2 bump (" + std::to_string(bump.position.x) + ", " + std::to_string(bump.position.y) + ")");
                 }
                 break;
             }
@@ -123,8 +123,8 @@ void Router::loadGridMap(const std::string& filename) {
                 iss >> x >> y >> chip2.size.x >> chip2.size.y;
                 chip2.lowerLeft = {x + routingAreaLowerLeft.x, y + routingAreaLowerLeft.y};
                 state = State::LoadingCommand;
-                LOG_TRACE("Chip 2 lower left: (" + std::to_string(chip2.lowerLeft.x) + ", " + std::to_string(chip2.lowerLeft.y) + ")");
-                LOG_TRACE("Chip 2 size: (" + std::to_string(chip2.size.x) + ", " + std::to_string(chip2.size.y) + ")");
+                // LOG_TRACE("Chip 2 lower left: (" + std::to_string(chip2.lowerLeft.x) + ", " + std::to_string(chip2.lowerLeft.y) + ")");
+                // LOG_TRACE("Chip 2 size: (" + std::to_string(chip2.size.x) + ", " + std::to_string(chip2.size.y) + ")");
                 break;
             }
             default: break;
@@ -183,24 +183,24 @@ void Router::loadGridMap(const std::string& filename) {
     for (auto& bump : chip1.bumps) {
         int x = (bump.position.x - routingAreaLowerLeft.x) / gcellSize.x;
         int y = (bump.position.y - routingAreaLowerLeft.y) / gcellSize.y;
-        LOG_TRACE("Chip 1 bump (" + std::to_string(bump.position.x) + ", " + std::to_string(bump.position.y) + ") -> GCell (" + std::to_string(x) + ", " + std::to_string(y) + ")");
+        // LOG_TRACE("Chip 1 bump (" + std::to_string(bump.position.x) + ", " + std::to_string(bump.position.y) + ") -> GCell (" + std::to_string(x) + ", " + std::to_string(y) + ")");
         bump.gcell = gcells[y][x];
     }
     for (auto& bump : chip2.bumps) {
         int x = (bump.position.x - routingAreaLowerLeft.x) / gcellSize.x;
         int y = (bump.position.y - routingAreaLowerLeft.y) / gcellSize.y;
-        LOG_TRACE("Chip 2 bump (" + std::to_string(bump.position.x) + ", " + std::to_string(bump.position.y) + ") -> GCell (" + std::to_string(x) + ", " + std::to_string(y) + ")");
+        // LOG_TRACE("Chip 2 bump (" + std::to_string(bump.position.x) + ", " + std::to_string(bump.position.y) + ") -> GCell (" + std::to_string(x) + ", " + std::to_string(y) + ")");
         bump.gcell = gcells[y][x];
     }
 }
 
 void Router::loadGCells(const std::string& filename) {
     // Load gcells
-    LOG_INFO("Loading gcells from " + filename);
+    // LOG_INFO("Loading gcells from " + filename);
 
     std::ifstream file(filename);
     if (!file.is_open()) {
-        LOG_ERROR("Cannot open file " + filename);
+        // LOG_ERROR("Cannot open file " + filename);
         return;
     }
 
@@ -222,7 +222,7 @@ void Router::loadGCells(const std::string& filename) {
                 if (command == ".ec") {
                     state = State::LoadingGCell;
                 } else {
-                    LOG_ERROR("Unknown command " + command);
+                    // LOG_ERROR("Unknown command " + command);
                 }
                 break;
             }
@@ -243,11 +243,11 @@ void Router::loadGCells(const std::string& filename) {
 
 void Router::loadCost(const std::string& filename) {
     // Load cost
-    LOG_INFO("Loading cost from " + filename);
+    // LOG_INFO("Loading cost from " + filename);
 
     std::ifstream file(filename);
     if (!file.is_open()) {
-        LOG_ERROR("Cannot open file " + filename);
+        // LOG_ERROR("Cannot open file " + filename);
         return;
     }
 
@@ -277,28 +277,28 @@ void Router::loadCost(const std::string& filename) {
                 } else if (command == ".alpha") {
                     iss >> alpha;
                     state = State::LoadingCommand;
-                    LOG_TRACE("Alpha: " + std::to_string(alpha));
+                    // LOG_TRACE("Alpha: " + std::to_string(alpha));
                 } else if (command == ".beta") {
                     iss >> beta;
                     state = State::LoadingCommand;
-                    LOG_TRACE("Beta: " + std::to_string(beta));
+                    // LOG_TRACE("Beta: " + std::to_string(beta));
                 } else if (command == ".gamma") {
                     iss >> gamma;
                     state = State::LoadingCommand;
-                    LOG_TRACE("Gamma: " + std::to_string(gamma));
+                    // LOG_TRACE("Gamma: " + std::to_string(gamma));
                 } else if (command == ".delta") {
                     iss >> delta;
                     state = State::LoadingCommand;
-                    LOG_TRACE("Delta: " + std::to_string(delta));
+                    // LOG_TRACE("Delta: " + std::to_string(delta));
                 } else {
-                    LOG_ERROR("Unknown command " + command);
+                    // LOG_ERROR("Unknown command " + command);
                 }
                 break;
             }
             case State::LoadingViaCost: {
                 iss >> viaCost;
                 state = State::LoadingCommand;
-                LOG_TRACE("Via cost: " + std::to_string(viaCost));
+                // LOG_TRACE("Via cost: " + std::to_string(viaCost));
                 break;
             }
             case State::LoadingLayer: {
@@ -350,11 +350,11 @@ void Router::loadCost(const std::string& filename) {
 
 void Router::dumpRoutes(const std::string& filename) {
     // Dump routes
-    LOG_INFO("Dumping routes to " + filename);
+    // LOG_INFO("Dumping routes to " + filename);
 
     std::ofstream file(filename);
     if (!file.is_open()) {
-        LOG_ERROR("Cannot open file " + filename);
+        // LOG_ERROR("Cannot open file " + filename);
         return;
     }
 
@@ -368,7 +368,7 @@ void Router::dumpRoutes(const std::string& filename) {
             Point<int> diff = {currPoint.x - lastPoint.x, currPoint.y - lastPoint.y};
             if (diff.x != 0) {
                 if (diff.y != 0) {
-                    LOG_ERROR("Invalid route, cannot change both x and y");
+                    // LOG_ERROR("Invalid route, cannot change both x and y");
                     return;
                 }
                 if (currentMetal == Metal::M1) {
@@ -383,7 +383,7 @@ void Router::dumpRoutes(const std::string& filename) {
                 }
             } else if (diff.y != 0) {
                 if (diff.x != 0) {
-                    LOG_ERROR("Invalid route, cannot change both x and y");
+                    // LOG_ERROR("Invalid route, cannot change both x and y");
                     return;
                 }
                 if (currentMetal == Metal::M1) {
@@ -396,7 +396,7 @@ void Router::dumpRoutes(const std::string& filename) {
                     fromPoint = lastPoint;
                 }
             } else {
-                LOG_ERROR("Invalid route, no change in x and y");
+                // LOG_ERROR("Invalid route, no change in x and y");
                 return;
             }
             lastPoint = currPoint;
@@ -415,7 +415,7 @@ void Router::dumpRoutes(const std::string& filename) {
 // https://zh.wikipedia.org/zh-tw/A*搜尋演算法
 Route* Router::router(GCell* source, GCell* target) {
     // Route
-    LOG_INFO("Routing from (" + std::to_string(source->lowerLeft.x) + ", " + std::to_string(source->lowerLeft.y) + ") to (" + std::to_string(target->lowerLeft.x) + ", " + std::to_string(target->lowerLeft.y) + ")");
+    // LOG_INFO("Routing from (" + std::to_string(source->lowerLeft.x) + ", " + std::to_string(source->lowerLeft.y) + ") to (" + std::to_string(target->lowerLeft.x) + ", " + std::to_string(target->lowerLeft.y) + ")");
     
     const auto cmp = [](GCell* a, GCell* b) {
         return a->gScore > b->gScore;
@@ -440,15 +440,15 @@ Route* Router::router(GCell* source, GCell* target) {
             openSetQ.pop();
         }
         if (current == target) {
-            LOG_INFO("Found route!");
-            LOG_INFO("Total cost: " + std::to_string(current->gScore));
+            // LOG_INFO("Found route!");
+            // LOG_INFO("Total cost: " + std::to_string(current->gScore));
             Route* route = new Route();
             route->cost = current->gScore;
             while (current != nullptr) {
                 GCell* next;
                 switch (current->fromDirection) {
                     case GCell::FromDirection::ORIGIN: {
-                        LOG_ERROR("Invalid from direction");
+                        // LOG_ERROR("Invalid from direction");
                         delete route;
                         return nullptr;
                     }
@@ -473,7 +473,7 @@ Route* Router::router(GCell* source, GCell* target) {
                         break;
                     }
                     default: {
-                        LOG_ERROR("Unknown from direction");
+                        // LOG_ERROR("Unknown from direction");
                         delete route;
                         return nullptr;
                     }
@@ -492,7 +492,7 @@ Route* Router::router(GCell* source, GCell* target) {
         openSet.erase(current);
         closedSet.insert(current);
 
-        LOG_TRACE("Current cell: (" + std::to_string(current->lowerLeft.x) + ", " + std::to_string(current->lowerLeft.y) + ")");
+        // LOG_TRACE("Current cell: (" + std::to_string(current->lowerLeft.x) + ", " + std::to_string(current->lowerLeft.y) + ")");
         if (
             current->left != nullptr && closedSet.find(current->left) == closedSet.end()
         ) {
@@ -539,7 +539,7 @@ Route* Router::router(GCell* source, GCell* target) {
                     break;
                 }
                 default: {
-                    LOG_ERROR("Unknown from direction");
+                    // LOG_ERROR("Unknown from direction");
                     return nullptr;
                 }
             }
@@ -592,7 +592,7 @@ Route* Router::router(GCell* source, GCell* target) {
                     break;
                 }
                 default: {
-                    LOG_ERROR("Unknown from direction");
+                    // LOG_ERROR("Unknown from direction");
                     return nullptr;
                 }
             }
@@ -659,7 +659,7 @@ Route* Router::router(GCell* source, GCell* target) {
                     break;
                 }
                 default: {
-                    LOG_ERROR("Unknown from direction");
+                    // LOG_ERROR("Unknown from direction");
                     return nullptr;
                 }
             }
@@ -712,7 +712,7 @@ Route* Router::router(GCell* source, GCell* target) {
                     break;
                 }
                 default: {
-                    LOG_ERROR("Unknown from direction");
+                    // LOG_ERROR("Unknown from direction");
                     return nullptr;
                 }
             }
@@ -739,7 +739,7 @@ Route* Router::router(GCell* source, GCell* target) {
 
 double Router::solve() {
     // Run
-    LOG_INFO("Running router");
+    // LOG_INFO("Running router");
 
     std::vector<size_t> bump_indices(chip1.bumps.size());
     std::iota(bump_indices.begin(), bump_indices.end(), 0);
@@ -749,25 +749,25 @@ double Router::solve() {
     for (size_t i = 0; i < bump_indices.size(); i++) {
         size_t bump_idx = bump_indices[i];
     // for (size_t bump_idx = 0; bump_idx < chip1.bumps.size(); bump_idx++) {
-        LOG_INFO("Routing bump " + std::to_string(bump_idx));
+        // LOG_INFO("Routing bump " + std::to_string(bump_idx));
         Bump& bump1 = chip1.bumps[bump_idx];
         Bump& bump2 = chip2.bumps[bump_idx];
         if (bump1.idx != bump2.idx) {
-            LOG_ERROR("Bump index mismatch");
+            // LOG_ERROR("Bump index mismatch");
             return DBL_MAX;
         }
         Route* route = router(bump1.gcell, bump2.gcell);
         route->idx = bump1.idx;
         if (route == nullptr) {
-            LOG_ERROR("Cannot find route from (" + std::to_string(bump1.gcell->lowerLeft.x) + ", " + std::to_string(bump1.gcell->lowerLeft.y) + ") to (" + std::to_string(bump2.gcell->lowerLeft.x) + ", " + std::to_string(bump2.gcell->lowerLeft.y) + ")");
+            // LOG_ERROR("Cannot find route from (" + std::to_string(bump1.gcell->lowerLeft.x) + ", " + std::to_string(bump1.gcell->lowerLeft.y) + ") to (" + std::to_string(bump2.gcell->lowerLeft.x) + ", " + std::to_string(bump2.gcell->lowerLeft.y) + ")");
             return DBL_MAX;
         } else {
-            LOG_INFO("Success");
+            // LOG_INFO("Success");
             routes.push_back(route);
             totalCost += route->cost;
         }
     }
-    LOG_INFO("Router finished");
+    // LOG_INFO("Router finished");
 
     std::sort(routes.begin(), routes.end(), [](const Route* a, const Route* b) {
         return a->idx < b->idx;
