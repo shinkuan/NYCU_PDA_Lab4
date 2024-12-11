@@ -119,13 +119,14 @@ int main(int argc, char* argv[]) {
     router.loadGridMap(argv[1]);
     router.loadGCells(argv[2]);
     router.loadCost(argv[3]);
-    router.solve();
+    double cost = router.solve();
     router.dumpRoutes(argv[4]);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
 
     std::cout << "Elapsed time: " << elapsed.count() << "s" << std::endl;
+    std::cout << "Cost: " << cost << std::endl;
 
     return 0;
 }
