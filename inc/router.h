@@ -41,6 +41,7 @@
 #include <set>
 #include <unordered_set>
 #include <random>
+#include <chrono>
 #include "common.h"
 #include "gcell.h"
 #include "chip.h"
@@ -56,6 +57,7 @@ public:
     void loadCost(const std::string& filename);
     void dumpRoutes(const std::string& filename);
     Route* router(GCell* source, GCell* target);
+    Route* fast_router(GCell* source, GCell* target);
 
     double solve();
 
@@ -89,6 +91,9 @@ private:
 
     // Random
     std::mt19937 rng;
+
+    // Start time
+    std::chrono::high_resolution_clock::time_point startTime;
 };
 
 

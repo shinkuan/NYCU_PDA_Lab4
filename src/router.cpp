@@ -12,6 +12,7 @@
 #include "logger.h"
 
 Router::Router() {
+    startTime = std::chrono::high_resolution_clock::now();
 }
 
 Router::~Router() {
@@ -737,6 +738,58 @@ Route* Router::router(GCell* source, GCell* target) {
     return nullptr;
 }
 
+Route* Router::fast_router(GCell* source, GCell* target) {
+    // L-Pattern Routing
+    Route* route = new Route();
+    GCell* current = source;
+    GCell* next = nullptr;
+    while (current != target) {
+        if (current->lowerLeft.x < target->lowerLeft.x) {
+            next = current->right;
+            if (next == nullptr) {
+                // LOG_ERROR("Cannot find route from (" + std::to_string(current->lowerLeft.x) + ", " + std::to_string(current->lowerLeft.y) + ") to (" + std::to_string(target->lowerLeft.x) + ", " + std::to_string(target->lowerLeft.y) + ")");
+                delete route;
+                return nullptr;
+            }
+            route->route.push_back(current);
+            current = next;
+        } else if (current->lowerLeft.x > target->lowerLeft.x) {
+            next = current->left;
+            if (next == nullptr) {
+                // LOG_ERROR("Cannot find route from (" + std::to_string(current->lowerLeft.x) + ", " + std::to_string(current->lowerLeft.y) + ") to (" + std::to_string(target->lowerLeft.x) + ", " + std::to_string(target->lowerLeft.y) + ")");
+                delete route;
+                return nullptr;
+            }
+            route->route.push_back(current);
+            current = next;
+        } else if (current->lowerLeft.y < target->lowerLeft.y) {
+            next = current->top;
+            if (next == nullptr) {
+                // LOG_ERROR("Cannot find route from (" + std::to_string(current->lowerLeft.x) + ", " + std::to_string(current->lowerLeft.y) + ") to (" + std::to_string(target->lowerLeft.x) + ", " + std::to_string(target->lowerLeft.y) + ")");
+                delete route;
+                return nullptr;
+            }
+            route->route.push_back(current);
+            current = next;
+        } else if (current->lowerLeft.y > target->lowerLeft.y) {
+            next = current->bottom;
+            if (next == nullptr) {
+                // LOG_ERROR("Cannot find route from (" + std::to_string(current->lowerLeft.x) + ", " + std::to_string(current->lowerLeft.y) + ") to (" + std::to_string(target->lowerLeft.x) + ", " + std::to_string(target->lowerLeft.y) + ")");
+                delete route;
+                return nullptr;
+            }
+            route->route.push_back(current);
+            current = next;
+        } else {
+            // LOG_ERROR("Invalid route, no change in x and y");
+            delete route;
+            return nullptr;
+        }
+    }
+    route->route.push_back(current);
+    return route;
+}
+
 double Router::solve() {
     // Run
     // LOG_INFO("Running router");
@@ -756,7 +809,14 @@ double Router::solve() {
             // LOG_ERROR("Bump index mismatch");
             return DBL_MAX;
         }
-        Route* route = router(bump1.gcell, bump2.gcell);
+        Route* route;
+        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> elapsed = end - startTime;
+        if (elapsed.count() > 590) {
+            route = fast_router(bump1.gcell, bump2.gcell);
+        } else {
+            route = router(bump1.gcell, bump2.gcell);
+        }
         route->idx = bump1.idx;
         if (route == nullptr) {
             // LOG_ERROR("Cannot find route from (" + std::to_string(bump1.gcell->lowerLeft.x) + ", " + std::to_string(bump1.gcell->lowerLeft.y) + ") to (" + std::to_string(bump2.gcell->lowerLeft.x) + ", " + std::to_string(bump2.gcell->lowerLeft.y) + ")");
