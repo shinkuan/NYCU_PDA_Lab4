@@ -812,7 +812,7 @@ double Router::solve() {
         Route* route;
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> elapsed = end - startTime;
-        if (elapsed.count() > 590) {
+        if (elapsed.count() > 1190) {
             route = fast_router(bump1.gcell, bump2.gcell);
         } else {
             route = router(bump1.gcell, bump2.gcell);
