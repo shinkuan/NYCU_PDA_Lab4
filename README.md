@@ -1,3 +1,4 @@
+```cpp
 #include <iostream>
 #include <windows.h>
 #include <vector>
@@ -598,3 +599,4 @@ int main() {
     
     return 0;
 }
+```
